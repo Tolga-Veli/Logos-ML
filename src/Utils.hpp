@@ -5,16 +5,11 @@
 #include <fstream>
 #include <cassert>
 
-#include "Logging.hpp"
-
 namespace logos::utils {
 
 inline std::string ReadFile(const std::filesystem::path &path) {
   std::ifstream in(path, std::ios::binary);
-  if (!in) {
-    L_ERROR("Failed to open file: " + path.string());
-    return "";
-  }
+  assert(in && "Failed to open file.");
 
   in.seekg(0, std::ios::end);
   std::string contents;
@@ -22,10 +17,7 @@ inline std::string ReadFile(const std::filesystem::path &path) {
   in.seekg(0, std::ios::beg);
   in.read(contents.data(), contents.size());
 
-  if (!in) {
-    L_ERROR("Failed to read file: " + path.string());
-    return "";
-  }
+  assert(in && "Failed to read file.");
   return contents;
 }
 } // namespace logos::utils
