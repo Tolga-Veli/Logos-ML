@@ -1,34 +1,29 @@
 #pragma once
 
-#include <cstdint>
 #include <vector>
-#include <filesystem>
+#include <cstdint>
+#include <stdexcept>
 
-namespace logos {
-template <typename value_type = double> class Matrix {
+namespace linalg {
+class Matrix {
 public:
-  // Use RAII
-  Matrix() = delete;
-  explicit Matrix(uint32_t rows, uint32_t cols, const std::filesystem path);
-  explicit Matrix(uint32_t rows, uint32_t cols);
-  Matrix(Matrix &other);
-  Matrix &operator=(Matrix &other);
-  Matrix(Matrix &&other) = delete;
-  Matrix &operator=(Matrix &&other) = delete;
-  ~Matrix();
+  Matrix();
+  Matrix(uint64_t rows, uint64_t cols);
 
-  Matrix operator+(Matrix &other);
-  Matrix operator-(Matrix &other);
-  Matrix operator*(Matrix &other);
-  Matrix operator/(Matrix &other);
+  uint64_t GetRows() const { return m_Rows; }
+  uint64_t GetCols() const { return m_Cols; }
+  size_t GetSize() const { return m_Data.size(); }
 
-  void Clear();
-  void Fill(value_type val);
-  void Scale(value_type scale);
-  void Transpose();
+  float &at(uint64_t row, uint64_t col);
+  const float &at(uint64_t row, uint64_t col) const;
+
+  void Fill(float val);
+
+  float *data() { return m_Data.data(); }
+  const float *data() const { return m_Data.data(); }
 
 private:
-  uint32_t m_Rows, m_Cols;
-  std::vector<value_type> m_Data;
+  std::vector<float> m_Data;
+  uint64_t m_Rows, m_Cols;
 };
-}; // namespace logos
+} // namespace linalg
