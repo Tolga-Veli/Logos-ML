@@ -1,139 +1,95 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
-#include "Linalg.hpp"
+#include <stdexcept>
+#include <vector>
 
-namespace NeuralNet {
-inline void Softmax(const linalg::Matrix &logits, linalg::Matrix &probs) {
-  const auto N = logits.GetRows(), M = logits.GetCols();
+#include "Matrix.inl"
+
+namespace Logos::NeuralNet {
+template <class T>
+inline void Softmax(const linalg::Matrix<T> &logits, linalg::Matrix<T> &probs) {
+
+  const auto N = logits.rows(), M = logits.cols();
   if (N == 0 || M == 0)
     throw std::logic_error("Softmax: empty logits");
 
-  if (probs.GetRows() != N || probs.GetCols() != M)
-    probs = linalg::Matrix(N, M);
+  if (probs.rows() != N || probs.cols() != M)
+    probs = linalg::Matrix<T>(N, M);
 
-  const auto X = logits.data();
-  auto Z = probs.data();
+  for (std::size_t i = 0; i < N; i++) {
+    T maxv = std::numeric_limits<T>::lowest();
+    for (std::size_t j = 0; j < M; j++)
+      maxv = std::max(maxv, logits(i, j));
 
-  for (uint64_t i = 0; i < N; i++) {
-    float maxv = std::numeric_limits<float>::lowest();
-    for (uint64_t j = 0; j < M; j++)
-      maxv = std::max(maxv, X[i * M + j]);
-
-    float sum = 0.0f;
-    for (uint64_t j = 0; j < M; j++) {
-      float val = std::exp(X[i * M + j] - maxv);
-      Z[i * M + j] = val;
+    T sum{0};
+    for (std::size_t j = 0; j < M; j++) {
+      const T val = std::exp(logits(i, j) - maxv);
+      probs(i, j) = val;
       sum += val;
     }
 
-    const float invSum = 1.0f / sum;
-    for (uint64_t j = 0; j < M; j++)
-      Z[i * M + j] *= invSum;
+    const T invSum = T{1} / sum;
+    for (std::size_t j = 0; j < M; j++)
+      probs(i, j) *= invSum;
   }
 }
 
-inline float SoftmaxCrossEntropyFromLogits(const linalg::Matrix &logits,
-                                           const std::vector<uint8_t> &labels,
-                                           linalg::Matrix &dLogits) {
-  const uint64_t N = logits.GetRows();
-  const uint64_t M = logits.GetCols();
+template <class T>
+inline T CrossEntropy(const linalg::Matrix<T> &probs,
+                      const std::vector<std::uint8_t> &labels,
+                      linalg::Matrix<T> &dLogits) {
+
+  const auto N = probs.rows(), M = probs.cols();
   if (N == 0 || M == 0 || labels.size() != N)
-    throw std::logic_error("SoftmaxCrossEntropyFromLogits: wrong input");
-
-  if (dLogits.GetRows() != N || dLogits.GetCols() != M)
-    dLogits = linalg::Matrix(N, M);
-
-  const float invN = 1.0f / static_cast<float>(N);
-  float loss_sum = 0.0f;
-
-  const float *X = logits.data();
-  float *G = dLogits.data();
-
-  for (uint64_t i = 0; i < N; ++i) {
-    const uint8_t y = labels[i];
-    if (y >= M)
-      throw std::logic_error(
-          "SoftmaxCrossEntropyFromLogits: label out of range");
-
-    const float *row = X + i * M;
-    float *grow = G + i * M;
-
-    float maxv = row[0];
-    for (uint64_t j = 1; j < M; ++j)
-      maxv = std::max(maxv, row[j]);
-
-    float sumExp = 0.0f;
-    for (uint64_t j = 0; j < M; ++j)
-      sumExp += std::exp(row[j] - maxv);
-
-    const float logSumExp = maxv + std::log(sumExp);
-    loss_sum += (-row[y] + logSumExp);
-
-    const float invSumExp = 1.0f / sumExp;
-    for (uint64_t j = 0; j < M; ++j) {
-      const float p = std::exp(row[j] - maxv) * invSumExp;
-      float g = p;
-      if (j == static_cast<uint64_t>(y))
-        g -= 1.0f;
-      grow[j] = g * invN;
-    }
-  }
-
-  return loss_sum * invN;
-}
-
-inline float CrossEntropy(const linalg::Matrix &probs,
-                          const std::vector<uint8_t> &labels,
-                          linalg::Matrix &dLogits) {
-  const auto N = probs.GetRows(), M = probs.GetCols();
-  if (N == 0 || M == 0 || (labels.size() != N))
     throw std::logic_error("CrossEntropy: wrong input");
 
-  if (dLogits.GetRows() != N || dLogits.GetCols() != M)
-    dLogits = linalg::Matrix(N, M);
+  if (dLogits.rows() != N || dLogits.cols() != M)
+    dLogits = linalg::Matrix<T>(N, M);
 
-  float loss_sum = 0.0f;
-  const float invN = 1.0f / float(N), eps = 1e-12f;
+  const T invN = T{1} / N;
+  const T eps = T{1e-12};
 
-  for (uint64_t i = 0; i < N; i++) {
-    const auto label = labels[i];
-    if (label >= M)
+  T loss_sum{0};
+  for (std::size_t i = 0; i < N; i++) {
+    const std::size_t y = static_cast<std::size_t>(labels[i]);
+    if (y >= M)
       throw std::logic_error("CrossEntropy: label out of range");
 
-    float val = probs.at(i, label);
-    if (val < eps)
-      val = eps;
+    T p_y = probs(i, y);
+    if (p_y < eps)
+      p_y = eps;
+    loss_sum += -std::log(p_y);
 
-    loss_sum += -std::log(val);
-
-    for (uint64_t j = 0; j < M; j++) {
-      float g = probs.at(i, j) * invN;
-      if (j == label)
+    for (std::size_t j = 0; j < M; j++) {
+      T g = probs(i, j) * invN;
+      if (j == y)
         g -= invN;
-      dLogits.at(i, j) = g;
+      dLogits(i, j) = g;
     }
   }
+
   return loss_sum * invN;
 }
 
-inline uint64_t ArgmaxRow(const linalg::Matrix &A, uint64_t row) {
-  const auto N = A.GetRows(), M = A.GetCols();
+template <class T>
+inline std::size_t ArgmaxRow(const linalg::Matrix<T> &A, std::size_t row) {
+  const auto N = A.rows(), M = A.cols();
   if (row >= N || M == 0)
     throw std::logic_error("ArgmaxRow: out of bounds");
 
-  const auto X = A.data() + row * M;
-
-  uint64_t best = 0;
-  float maxv = std::numeric_limits<float>::lowest();
-  for (uint64_t j = 0; j < M; j++) {
-    float val = X[j];
+  std::size_t best = 0;
+  T maxv = std::numeric_limits<T>::lowest();
+  for (std::size_t j = 0; j < M; j++) {
+    const T val = A(row, j);
     if (val > maxv) {
-      best = j;
       maxv = val;
+      best = j;
     }
   }
   return best;
 }
-} // namespace NeuralNet
+} // namespace Logos::NeuralNet
