@@ -1,5 +1,11 @@
+import os
 import tensorflow_datasets as tfds
 import numpy as np
+
+DATA_DIR = "data"
+
+os.makedirs(DATA_DIR,exist_ok=True)
+
 
 def ds_to_numpy(ds):
     images = []
@@ -22,12 +28,13 @@ test_images = test_images.astype(np.float32) / 255.0
 train_labels = train_labels.astype(np.uint8)
 test_labels = test_labels.astype(np.uint8)
 
-train_images.tofile("data/train_images.mat")
-train_labels.tofile("data/train_labels.mat")
-test_images.tofile("data/test_images.mat")
-test_labels.tofile("data/test_labels.mat")
+train_images.tofile(os.path.join(DATA_DIR,"train_images.mat"))
+train_labels.tofile(os.path.join(DATA_DIR,"train_labels.mat"))
+test_images.tofile(os.path.join(DATA_DIR,"test_images.mat"))
+test_labels.tofile(os.path.join(DATA_DIR,"test_labels.mat"))
 
-print(train_images.shape)
-print(train_labels.shape)
-print(test_images.shape)
-print(test_labels.shape)
+# If you need to check the sizes of the dataset
+#print(train_images.shape)
+#print(train_labels.shape)
+#print(test_images.shape)
+#print(test_labels.shape)
