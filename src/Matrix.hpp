@@ -1,29 +1,48 @@
 #pragma once
 
-#include <vector>
-#include <cstdint>
-#include <stdexcept>
+#include <cassert>
+#include <cstddef>
 
-namespace linalg {
-class Matrix {
+#include "Memory/Buffer.hpp"
+
+namespace Logos::linalg {
+
+template <class T> class Matrix {
 public:
-  Matrix();
-  Matrix(uint64_t rows, uint64_t cols);
+  Matrix() = default;
+  explicit Matrix(std::size_t rows, std::size_t cols,
+                  std::size_t alignment = Logos::Memory::DEFAULT_ALIGNMENT);
 
-  uint64_t GetRows() const { return m_Rows; }
-  uint64_t GetCols() const { return m_Cols; }
-  size_t GetSize() const { return m_Data.size(); }
+  Matrix(const Matrix &other) = delete;
+  Matrix &operator=(const Matrix &other) = delete;
 
-  float &at(uint64_t row, uint64_t col);
-  const float &at(uint64_t row, uint64_t col) const;
+  Matrix(Matrix &&other) noexcept;
+  Matrix &operator=(Matrix &&other) noexcept;
 
-  void Fill(float val);
+  T &operator()(std::size_t row, std::size_t col) {
+    return reinterpret_cast<T *>(m_Buffer.data())[row * m_LeadingDim + col];
+  }
+  const T &operator()(std::size_t row, std::size_t col) const {
+    return reinterpret_cast<const T *>(
+        m_Buffer.data())[row * m_LeadingDim + col];
+  }
 
-  float *data() { return m_Data.data(); }
-  const float *data() const { return m_Data.data(); }
+  std::size_t rows() const noexcept { return m_Rows; }
+  std::size_t cols() const noexcept { return m_Cols; }
+  std::size_t size() const noexcept { return m_Rows * m_Cols; }
+
+  std::size_t size_bytes() const noexcept { return m_Buffer.size_bytes(); }
+  std::size_t leading_dim() const noexcept { return m_LeadingDim; }
+
+  T *data() noexcept { return reinterpret_cast<T *>(m_Buffer.data()); }
+  const T *data() const noexcept {
+    return reinterpret_cast<const T *>(m_Buffer.data());
+  }
+
+  void fill_zeroes() { m_Buffer.fill_zeroes(); }
 
 private:
-  std::vector<float> m_Data;
-  uint64_t m_Rows, m_Cols;
+  Logos::Memory::Buffer m_Buffer;
+  std::size_t m_Rows = 0, m_Cols = 0, m_LeadingDim = 0;
 };
-} // namespace linalg
+} // namespace Logos::linalg
