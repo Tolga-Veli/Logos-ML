@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Matrix.hpp"
+#include "MatrixView.hpp"
 
 #include <cstddef>
 #include <stdexcept>
@@ -9,7 +9,8 @@
 namespace Logos::linalg {
 
 template <class T>
-inline void matmul(const Matrix<T> &A, const Matrix<T> &B, Matrix<T> &out) {
+inline void matmul(MatrixView<const T> A, MatrixView<const T> B,
+                   MatrixView<T> &out) {
   if (A.cols() != B.rows())
     throw std::logic_error("matmul shape mismatch");
 
@@ -18,7 +19,7 @@ inline void matmul(const Matrix<T> &A, const Matrix<T> &B, Matrix<T> &out) {
   // out is (N x M)
   const auto N = A.rows(), K = A.cols(), M = B.cols();
   if (out.rows() != N || out.cols() != M)
-    out = Matrix<T>(N, M);
+    out = MatrixView<T>(N, M);
   else
     out.fill_zeroes();
 
@@ -34,7 +35,7 @@ inline void matmul(const Matrix<T> &A, const Matrix<T> &B, Matrix<T> &out) {
 }
 
 template <class T>
-inline void add_rowwise_bias(const std::vector<T> &b, Matrix<T> &out) {
+inline void add_rowwise_bias(const std::vector<T> &b, MatrixView<T> &out) {
   if (b.size() != out.cols())
     throw std::logic_error("add_rowwise_bias: size mismatch");
 
@@ -46,7 +47,7 @@ inline void add_rowwise_bias(const std::vector<T> &b, Matrix<T> &out) {
 }
 
 template <class T>
-inline void sum_rows(const Matrix<T> &A, std::vector<T> &out) {
+inline void sum_rows(MatrixView<const T> A, std::vector<T> &out) {
   out.assign(A.cols(), 0.0f);
 
   const auto N = A.rows(), M = A.cols();
@@ -57,8 +58,8 @@ inline void sum_rows(const Matrix<T> &A, std::vector<T> &out) {
 }
 
 template <class T>
-inline void matmul_transposeA(const Matrix<T> &A, const Matrix<T> &B,
-                              Matrix<T> &out) {
+inline void matmul_transposeA(MatrixView<const T> A, MatrixView<const T> B,
+                              MatrixView<T> &out) {
   if (A.rows() != B.rows())
     throw std::logic_error("matmul_transposeA: mismatch");
 
@@ -68,7 +69,7 @@ inline void matmul_transposeA(const Matrix<T> &A, const Matrix<T> &B,
 
   const auto N = A.rows(), M = A.cols(), P = B.cols();
   if (out.rows() != M || out.cols() != P)
-    out = Matrix<T>(M, P);
+    out = MatrixView<T>(M, P);
   else
     out.fill_zeroes();
 
@@ -84,8 +85,8 @@ inline void matmul_transposeA(const Matrix<T> &A, const Matrix<T> &B,
 }
 
 template <class T>
-inline void matmul_transposeB(const Matrix<T> &A, const Matrix<T> &B,
-                              Matrix<T> &out) {
+inline void matmul_transposeB(MatrixView<const T> A, MatrixView<const T> B,
+                              MatrixView<T> &out) {
   if (A.cols() != B.cols())
     throw std::logic_error("matmul_transposeB: mismatch");
 
@@ -95,7 +96,7 @@ inline void matmul_transposeB(const Matrix<T> &A, const Matrix<T> &B,
 
   const auto N = A.rows(), M = A.cols(), P = B.rows();
   if (out.rows() != N || out.cols() != P)
-    out = Matrix<T>(N, P);
+    out = MatrixView<T>(N, P);
 
   const auto X = A.data(), Y = B.data();
   auto Z = out.data();
