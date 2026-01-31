@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "Arena.hpp"
 #include "Functions.hpp"
 #include "NeuralNetwork.hpp"
 
@@ -105,8 +104,12 @@ void TrainModel::run() {
       loss_acc += loss;
       steps++;
 
-      if (steps % 500 == 0)
-        show_prediction(m_Model, m_TrainImgs, m_TrainLabels, m_Order[start]);
+      if (steps % 500 == 0) {
+        static std::uniform_int_distribution<std::size_t> dist_idx(
+            0, yb.size() - 1);
+        show_prediction(m_Model, m_TrainImgs, m_TrainLabels,
+                        m_Order[start + dist_idx(m_RNG)]);
+      }
     }
 
     std::uint32_t correct = 0, total = 0;
@@ -206,7 +209,7 @@ void TrainModel::make_batch(const Matrix &imgs,
 void TrainModel::show_prediction(NeuralNetwork &model, const Matrix &imgs,
                                  const std::vector<uint8_t> &labels,
                                  std::size_t idx) {
-  if (idx >>= imgs.rows() || idx >= labels.size())
+  if (idx >= imgs.rows() || idx >= labels.size())
     throw std::logic_error("Show prediction: idx out of range");
 
   std::vector<float> img = get_mnist_image(imgs, idx);
@@ -221,8 +224,9 @@ void TrainModel::show_prediction(NeuralNetwork &model, const Matrix &imgs,
   Matrix logits;
   model.Forward(X, logits);
 
-  std::cout << "\nPrediction: " << Logos::NeuralNet::ArgmaxRow<float>(logits, 0)
-            << " | Ground truth: " << static_cast<int>(labels[idx]) << "\n\n";
+  std::cout << "\nPrediction: " << ArgmaxRow<float>(logits, 0)
+            << " | Ground truth: " << static_cast<unsigned>(labels[idx])
+            << "\n\n";
 }
 
 void TrainModel::draw_mnist_digit(const std::vector<float> &data) {
@@ -239,12 +243,11 @@ void TrainModel::draw_mnist_digit(const std::vector<float> &data) {
 
 std::vector<float> TrainModel::get_mnist_image(const Matrix &imgs,
                                                std::size_t idx) {
-  if (idx >>= imgs.rows())
+  if (idx >= imgs.rows())
     throw std::logic_error("Show prediction: idx out of range");
 
   const auto D = imgs.cols();
   std::vector<float> out(D);
-
   for (std::size_t j = 0; j < D; j++)
     out[j] = std::clamp(imgs(idx, j), 0.0f, 1.0f);
   return out;

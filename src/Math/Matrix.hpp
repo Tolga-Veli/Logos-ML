@@ -7,7 +7,7 @@
 #include "MatrixView.hpp"
 
 namespace Logos::linalg {
-
+// Matrix has a row-major memory layout
 template <class T> class Matrix {
 public:
   Matrix() = default;
@@ -38,8 +38,14 @@ public:
   const T *data() const noexcept { return m_Buffer.as<T>(); }
 
   MatrixView<T> view() {
-    return MatrixView<T>(m_Buffer.data(), m_Rows, m_Cols, 0, 0);
+    return MatrixView<T>(m_Buffer.as<T>(), m_Rows, m_Cols, m_LeadingDim, 1);
   }
+
+  MatrixView<const T> view() const {
+    return MatrixView<const T>(m_Buffer.as<T>(), m_Rows, m_Cols, m_LeadingDim,
+                               1);
+  }
+
   void fill_zeroes() { m_Buffer.clear(); }
 
 private:
