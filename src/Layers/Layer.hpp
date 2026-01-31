@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LinearAlgebra/Matrix.hpp"
+#include "Matrix.hpp"
 
 namespace Logos::NeuralNet {
 template <class T> class ILayer {

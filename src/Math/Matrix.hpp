@@ -3,7 +3,8 @@
 #include <cassert>
 #include <cstddef>
 
-#include "Memory/Buffer.hpp"
+#include "Buffer.hpp"
+#include "MatrixView.hpp"
 
 namespace Logos::linalg {
 
@@ -20,26 +21,26 @@ public:
   Matrix &operator=(Matrix &&other) noexcept;
 
   T &operator()(std::size_t row, std::size_t col) {
-    return reinterpret_cast<T *>(m_Buffer.data())[row * m_LeadingDim + col];
+    return m_Buffer.as<T>()[row * m_LeadingDim + col];
   }
   const T &operator()(std::size_t row, std::size_t col) const {
-    return reinterpret_cast<const T *>(
-        m_Buffer.data())[row * m_LeadingDim + col];
+    return m_Buffer.as<T>()[row * m_LeadingDim + col];
   }
 
   std::size_t rows() const noexcept { return m_Rows; }
   std::size_t cols() const noexcept { return m_Cols; }
   std::size_t size() const noexcept { return m_Rows * m_Cols; }
 
-  std::size_t size_bytes() const noexcept { return m_Buffer.size_bytes(); }
+  std::size_t size_bytes() const noexcept { return m_Buffer.size(); }
   std::size_t leading_dim() const noexcept { return m_LeadingDim; }
 
-  T *data() noexcept { return reinterpret_cast<T *>(m_Buffer.data()); }
-  const T *data() const noexcept {
-    return reinterpret_cast<const T *>(m_Buffer.data());
-  }
+  T *data() noexcept { return m_Buffer.as<T>(); }
+  const T *data() const noexcept { return m_Buffer.as<T>(); }
 
-  void fill_zeroes() { m_Buffer.fill_zeroes(); }
+  MatrixView<T> view() {
+    return MatrixView<T>(m_Buffer.data(), m_Rows, m_Cols, 0, 0);
+  }
+  void fill_zeroes() { m_Buffer.clear(); }
 
 private:
   Logos::Memory::Buffer m_Buffer;

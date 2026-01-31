@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <stdexcept>
 
 namespace Logos::Memory {
 
@@ -14,10 +15,5 @@ inline std::size_t AlignUp(std::size_t size, std::size_t alignment) {
 
 constexpr std::size_t DEFAULT_ALIGNMENT = 64;
 
-enum class Bytes : std::size_t {
-  Byte = 1,
-  KiB = 1 << 10,
-  MiB = 1 << 20,
-  GiB = 1 << 30,
-};
+inline constexpr std::size_t KiB = 1 << 10, MiB = 1 << 20, GiB = 1 << 30;
 } // namespace Logos::Memory

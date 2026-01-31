@@ -1,14 +1,14 @@
-#include "Buffer.hpp"
+#include "SharedBuffer.hpp"
 #include "AlignedAlloc.hpp"
-
+/*
 namespace Logos::Memory {
-Buffer::Buffer(std::size_t size, std::size_t alignment) {
+SharedBuffer::SharedBuffer(std::size_t size, std::size_t alignment) {
   allocate(size, alignment);
 }
 
-Buffer::~Buffer() { release(); }
+SharedBuffer::~SharedBuffer() { release(); }
 
-Buffer::Buffer(Buffer &&other) noexcept
+SharedBuffer::SharedBuffer(SharedBuffer &&other) noexcept
     : m_Data(other.m_Data), m_Bytes(other.m_Bytes),
       m_Alignment(other.m_Alignment) {
   other.m_Data = nullptr;
@@ -16,7 +16,7 @@ Buffer::Buffer(Buffer &&other) noexcept
   other.m_Alignment = DEFAULT_ALIGNMENT;
 }
 
-Buffer &Buffer::operator=(Buffer &&other) noexcept {
+SharedBuffer &SharedBuffer::operator=(SharedBuffer &&other) noexcept {
   if (this == &other)
     return *this;
 
@@ -33,9 +33,9 @@ Buffer &Buffer::operator=(Buffer &&other) noexcept {
   return *this;
 }
 
-void Buffer::allocate(std::size_t size, std::size_t alignment) {
+void SharedBuffer::allocate(std::size_t size, std::size_t alignment) {
   if (!IsPow2(alignment))
-    throw std::logic_error("Buffer alignment must be a power of two");
+    throw std::logic_error("SharedBuffer alignment must be a power of two");
 
   release();
 
@@ -44,7 +44,7 @@ void Buffer::allocate(std::size_t size, std::size_t alignment) {
     return;
   }
 
-  m_Data = static_cast<std::byte *>(aligned_malloc(size, alignment));
+  m_Data = reinterpret_cast<std::byte *>(aligned_malloc(size, alignment));
   if (!m_Data)
     throw std::bad_alloc();
 
@@ -52,11 +52,11 @@ void Buffer::allocate(std::size_t size, std::size_t alignment) {
   m_Alignment = alignment;
 }
 
-void Buffer::release() noexcept {
-  if (m_Data)
-    aligned_free(m_Data);
+void SharedBuffer::release() noexcept {
+  aligned_free(m_Data);
   m_Data = nullptr;
   m_Bytes = 0;
   m_Alignment = DEFAULT_ALIGNMENT;
 }
-} // namespace Logos::Memory
+
+} */// namespace Logos::Memory

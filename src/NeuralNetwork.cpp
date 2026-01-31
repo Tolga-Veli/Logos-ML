@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "Arena.hpp"
 #include "Functions.hpp"
 #include "NeuralNetwork.hpp"
 
@@ -18,9 +19,9 @@ MLP_Hardcoded::MLP_Hardcoded(std::size_t in_dim, std::size_t hidden_dim,
                              std::size_t num_classes, std::mt19937 &rng)
     : fc1(in_dim, hidden_dim, rng), fc2(hidden_dim, num_classes, rng) {}
 
-double MLP_Hardcoded::TrainStep(const Matrix &X,
-                                const std::vector<uint8_t> &labels,
-                                double learning_rate) {
+float MLP_Hardcoded::TrainStep(const Matrix &X,
+                               const std::vector<uint8_t> &labels,
+                               float learning_rate) {
   const auto N = X.rows(), M = X.cols();
   if (N == 0 || M == 0)
     throw std::logic_error("TrainStep: empty input matrix");
@@ -54,8 +55,8 @@ void MLP_Hardcoded::Forward(const Matrix &X, Matrix &out) {
   fc2.Forward(H1, out);
 }
 
-double MLP_Hardcoded::Accuracy(const Matrix &X,
-                               const std::vector<uint8_t> &labels) {
+float MLP_Hardcoded::Accuracy(const Matrix &X,
+                              const std::vector<uint8_t> &labels) {
   Forward(X, logits);
   const auto N = logits.rows();
   if (N != labels.size() || N == 0)
@@ -68,16 +69,16 @@ double MLP_Hardcoded::Accuracy(const Matrix &X,
       cnt++;
   }
 
-  return static_cast<double>(cnt) / N;
+  return static_cast<float>(cnt) / N;
 }
 
 TrainModel::TrainModel()
-    : m_RNG(123), m_LearningRate(LEARNING_RATE),
+    : m_Model(INPUT_LAYER, HIDDEN, OUTPUT_LAYER, m_RNG),
+      m_LearningRate(LEARNING_RATE),
       m_TrainImgs(load_images_mat("data/train_images.mat", 60000, 28, 28)),
-      m_TrainLabels(load_labels_mat("data/train_labels.mat", 60000)),
       m_TestImgs(load_images_mat("data/test_images.mat", 10000, 28, 28)),
-      m_TestLabels(load_labels_mat("data/test_labels.mat", 10000)),
-      m_Model(INPUT_LAYER, HIDDEN, OUTPUT_LAYER, m_RNG) {
+      m_TrainLabels(load_labels_mat("data/train_labels.mat", 60000)),
+      m_TestLabels(load_labels_mat("data/test_labels.mat", 10000)) {
 
   m_Order.resize(m_TrainImgs.rows());
   std::iota(m_Order.begin(), m_Order.end(), 0);
@@ -93,14 +94,14 @@ void TrainModel::run() {
   for (std::uint32_t ep = 1; ep <= EPOCHS; ep++) {
     std::shuffle(m_Order.begin(), m_Order.end(), m_RNG);
 
-    double loss_acc = 0.0;
+    float loss_acc = 0.0;
     std::size_t steps = 0;
 
     for (std::size_t start = 0; start < m_Order.size(); start += BATCH_SIZE) {
       make_batch(m_TrainImgs, m_TrainLabels, m_Order, start, BATCH_SIZE, Xb,
                  yb);
 
-      const double loss = m_Model.TrainStep(Xb, yb, m_LearningRate);
+      const float loss = m_Model.TrainStep(Xb, yb, m_LearningRate);
       loss_acc += loss;
       steps++;
 
@@ -117,7 +118,7 @@ void TrainModel::run() {
       const auto end = std::min(start + BATCH_SIZE, m_TestImgs.rows());
 
       std::vector<std::size_t> test_idx(end - start);
-      iota(test_idx.begin(), test_idx.end(), start);
+      std::iota(test_idx.begin(), test_idx.end(), start);
 
       make_batch(m_TestImgs, m_TestLabels, test_idx, 0, test_idx.size(), Xt,
                  yt);
@@ -132,9 +133,9 @@ void TrainModel::run() {
       }
     }
 
-    const double test_acc =
+    const float test_acc =
         (total == 0) ? 0.0f : static_cast<float>(correct) / total;
-    const double mean_loss = (steps == 0) ? 0.0f : loss_acc / steps;
+    const float mean_loss = (steps == 0) ? 0.0f : loss_acc / steps;
 
     std::cout << "Epoch " << ep << " done | lr=" << m_LearningRate
               << " mean_loss=" << mean_loss << " test_acc=" << test_acc << '\n';
@@ -205,6 +206,9 @@ void TrainModel::make_batch(const Matrix &imgs,
 void TrainModel::show_prediction(NeuralNetwork &model, const Matrix &imgs,
                                  const std::vector<uint8_t> &labels,
                                  std::size_t idx) {
+  if (idx >>= imgs.rows() || idx >= labels.size())
+    throw std::logic_error("Show prediction: idx out of range");
+
   std::vector<float> img = get_mnist_image(imgs, idx);
   draw_mnist_digit(img);
 
@@ -222,11 +226,11 @@ void TrainModel::show_prediction(NeuralNetwork &model, const Matrix &imgs,
 }
 
 void TrainModel::draw_mnist_digit(const std::vector<float> &data) {
-  for (std::size_t x = 0; x < 28; x++) {
-    for (std::size_t y = 0; y < 28; y++) {
-      const float num = data[x * 28 + y];
+  for (std::size_t y = 0; y < 28; y++) {
+    for (std::size_t x = 0; x < 28; x++) {
+      const float num = data[y * 28 + x];
       const std::uint32_t col = 232u + static_cast<std::uint32_t>(num * 23.0f);
-      std::printf("\x1b[48;5;%dm  ", col);
+      std::printf("\x1b[48;5;%dm  ", static_cast<unsigned>(col));
     }
     std::printf("\n");
   }
@@ -235,6 +239,9 @@ void TrainModel::draw_mnist_digit(const std::vector<float> &data) {
 
 std::vector<float> TrainModel::get_mnist_image(const Matrix &imgs,
                                                std::size_t idx) {
+  if (idx >>= imgs.rows())
+    throw std::logic_error("Show prediction: idx out of range");
+
   const auto D = imgs.cols();
   std::vector<float> out(D);
 
