@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "Arena.hpp"
 #include "Linear.hpp"
 #include "ReLU.hpp"
 
