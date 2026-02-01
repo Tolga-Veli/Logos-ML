@@ -2,7 +2,6 @@
 
 A **C++ neural network framework built from scratch** focused on **explicit memory management**, **simplicity** and **clarity**, with an implementation of training a multilayer perceptron on the **MNIST** dataset.
 
----
 
 ## Overview
 
@@ -17,7 +16,6 @@ Logos-ML explores the internal mechanics of machine learning systems by implemen
 
 The project avoids external ML libraries.
 
----
 
 ## Features
 
@@ -29,7 +27,6 @@ The project avoids external ML libraries.
 - Mini-batch **gradient descent**
 - **MNIST classification** example
 
----
 
 ## Abstractions
 
@@ -46,7 +43,6 @@ The implementation is performance-conscious and minimal.
 - Stores only necessary state for backpropagation
 - Gradients are computed by hand
 
----
 
 ## Architecture Overview
 
@@ -61,7 +57,6 @@ High-level components:
 - **TrainModel** — data loading, batching, training loop  
 
 
----
 
 ## Example: MNIST Model
 
@@ -75,7 +70,6 @@ The included model trains a multilayer perceptron with:
 
 Training, inference, and evaluation are implemented explicitly without high-level framework abstractions.
 
----
 
 ## Build
 
@@ -90,7 +84,6 @@ cmake ..
 cmake --build .
 ```
 
----
 
 ## MNIST Setup
 
@@ -119,7 +112,6 @@ Then run the program:
 ```
 (Windows: Logos.exe)
 
----
 
 ## Roadmap
 Planned changes:
