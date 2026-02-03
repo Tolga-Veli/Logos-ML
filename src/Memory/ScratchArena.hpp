@@ -12,6 +12,8 @@ public:
 
   ScratchArena(const ScratchArena &) = delete;
   ScratchArena &operator=(const ScratchArena &) = delete;
+  ScratchArena(ScratchArena &&) = delete;
+  ScratchArena &operator=(ScratchArena &&) = delete;
 
   ~ScratchArena() noexcept { m_Arena.rewind(m_BeginOffset); }
 

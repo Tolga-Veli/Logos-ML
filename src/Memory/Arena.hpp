@@ -2,6 +2,7 @@
 
 #include "Buffer.hpp"
 
+#include <cstdint>
 #include <stdexcept>
 
 namespace Logos::Memory {
@@ -21,22 +22,8 @@ public:
 
   Arena(const Arena &) = delete;
   Arena &operator=(const Arena &) = delete;
-
-  Arena(Arena &&other) noexcept = delete; /*
-      : m_Buffer(std::move(other.m_Buffer)), m_Offset(other.m_Offset) {
-    other.m_Offset = 0;
-  }*/
+  Arena(Arena &&other) noexcept = delete;
   Arena &operator=(Arena &&other) noexcept = delete;
-  /*{
-    if (this == &other)
-      return *this;
-
-    m_Buffer.release();
-    m_Buffer = std::move(other.m_Buffer);
-    m_Offset = other.m_Offset;
-    other.m_Offset = 0;
-    return *this;
-  }*/
 
   std::size_t offset() const noexcept { return m_Offset; }
   std::size_t capacity() const noexcept { return m_Buffer.size(); }

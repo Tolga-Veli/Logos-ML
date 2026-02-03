@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "Math/ArenaMatrix.hpp"
-#include "Matrix.inl"
+#include "Matrix.hpp"
 
 namespace Logos::NeuralNet {
 template <class T>
