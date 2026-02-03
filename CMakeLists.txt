@@ -20,28 +20,10 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
   "${SRC_DIR}/*.hpp"
 )
 
-file(GLOB_RECURSE SRC_SUBDIRS LIST_DIRECTORIES true
-  "${SRC_DIR}/*"
-)
-
-set(ALL_INCLUDE_DIRS
-  "${SRC_DIR}"
-)
-
-foreach(p ${SRC_SUBDIRS})
-  if(IS_DIRECTORY "${p}")
-    list(APPEND ALL_INCLUDE_DIRS "${p}")
-  endif()
-endforeach()
-
-list(REMOVE_DUPLICATES ALL_INCLUDE_DIRS)
-
-
 add_executable(Logos ${SOURCES} ${HEADERS})
+target_include_directories(Logos PRIVATE  "${SRC_DIR}")
 
-target_include_directories(Logos PRIVATE
-  ${ALL_INCLUDE_DIRS}
-)
+set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Logos)
 
 source_group(TREE "${SRC_DIR}" PREFIX "src" FILES
   ${SOURCES} ${HEADERS}
@@ -49,9 +31,14 @@ source_group(TREE "${SRC_DIR}" PREFIX "src" FILES
 
 if (MSVC)
   target_compile_options(Logos PRIVATE /W4 /permissive-)
-  target_compile_options(Logos PRIVATE /O2)
+  target_compile_options(Logos PRIVATE 
+    $<$<CONFIG:Debug>:/Od /Zi>
+    $<$<CONFIG:Release>:/O2>
+  )
 else()
   target_compile_options(Logos PRIVATE -Wall -Wextra -Wpedantic)
-  target_compile_options(Logos PRIVATE -O3)
+  target_compile_options(Logos PRIVATE 
+    $<$<CONFIG:Debug>:-g -O0>
+    $<$<CONFIG:Release>:-O3>
+  )
 endif()
-

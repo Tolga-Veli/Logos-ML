@@ -3,9 +3,7 @@ import tensorflow_datasets as tfds
 import numpy as np
 
 DATA_DIR = "data"
-
 os.makedirs(DATA_DIR,exist_ok=True)
-
 
 def ds_to_numpy(ds):
     images = []
@@ -17,6 +15,7 @@ def ds_to_numpy(ds):
 
     return np.array(images), np.array(labels)
 
+print("Downloading and processing MNIST dataset...")
 train_ds, test_ds = tfds.load("mnist", split=["train", "test"], as_supervised=True)
 
 train_images, train_labels = ds_to_numpy(train_ds)
@@ -33,8 +32,5 @@ train_labels.tofile(os.path.join(DATA_DIR,"train_labels.mat"))
 test_images.tofile(os.path.join(DATA_DIR,"test_images.mat"))
 test_labels.tofile(os.path.join(DATA_DIR,"test_labels.mat"))
 
-# If you need to check the sizes of the dataset
-#print(train_images.shape)
-#print(train_labels.shape)
-#print(test_images.shape)
-#print(test_labels.shape)
+print(f"Data generated successfully in {os.path.abspath(DATA_DIR)}")
+

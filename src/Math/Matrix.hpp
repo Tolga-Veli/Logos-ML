@@ -3,7 +3,7 @@
 #include <cassert>
 #include <cstddef>
 
-#include "Buffer.hpp"
+#include "Memory/Buffer.hpp"
 #include "MatrixView.hpp"
 
 namespace Logos::linalg {
