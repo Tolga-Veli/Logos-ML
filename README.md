@@ -69,12 +69,16 @@ Training, inference, and evaluation are implemented explicitly without high-leve
 This project uses **CMake**.
 
 From the project root:
-
+MSVC:
 ```bash
-mkdir build
-cd build
-cmake ..
-cmake --build .
+cmake -S . -B build
+cmake --build . --config Release
+```
+
+GCC:
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
 ```
 
 
