@@ -3,8 +3,8 @@
 #include <cassert>
 #include <cstddef>
 
-#include "Memory/Buffer.hpp"
 #include "MatrixView.hpp"
+#include "Memory/Buffer.hpp"
 
 namespace Logos::linalg {
 // Matrix has a row-major memory layout
@@ -41,7 +41,7 @@ public:
     return MatrixView<T>(m_Buffer.as<T>(), m_Rows, m_Cols, m_LeadingDim, 1);
   }
 
-  MatrixView<const T> view() const {
+  MatrixView<const T> cview() const {
     return MatrixView<const T>(m_Buffer.as<T>(), m_Rows, m_Cols, m_LeadingDim,
                                1);
   }

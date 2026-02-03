@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Math/Matrix.hpp"
+#include "Math/MatrixView.hpp"
 
 namespace Logos::NeuralNet {
 template <class T> class ILayer {
@@ -8,9 +8,10 @@ public:
   ILayer() = default;
   virtual ~ILayer() = default;
 
-  virtual void Forward(const linalg::Matrix<T> &in, linalg::Matrix<T> &out) = 0;
-  virtual void Backward(const linalg::Matrix<T> &in,
-                        linalg::Matrix<T> &out) = 0;
+  virtual void Forward(linalg::MatrixView<const T> in,
+                       linalg::MatrixView<T> out) = 0;
+  virtual void Backward(linalg::MatrixView<const T> prev,
+                        linalg::MatrixView<T> curr) = 0;
 
   virtual void ZeroGrads() = 0;
   virtual void GradientDescentStep(float learning_rate) = 0;

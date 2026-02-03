@@ -22,11 +22,12 @@ public:
   Arena(const Arena &) = delete;
   Arena &operator=(const Arena &) = delete;
 
-  Arena(Arena &&other) noexcept
+  Arena(Arena &&other) noexcept = delete; /*
       : m_Buffer(std::move(other.m_Buffer)), m_Offset(other.m_Offset) {
     other.m_Offset = 0;
-  }
-  Arena &operator=(Arena &&other) noexcept {
+  }*/
+  Arena &operator=(Arena &&other) noexcept = delete;
+  /*{
     if (this == &other)
       return *this;
 
@@ -35,7 +36,7 @@ public:
     m_Offset = other.m_Offset;
     other.m_Offset = 0;
     return *this;
-  }
+  }*/
 
   std::size_t offset() const noexcept { return m_Offset; }
   std::size_t capacity() const noexcept { return m_Buffer.size(); }
@@ -56,11 +57,11 @@ public:
     if (!IsPow2(alignment))
       throw std::logic_error("Arena alignment must be a power of two");
 
-    const std::size_t start = AlignUp(m_Offset, alignment),
-                      bytes = sizeof(T) * count;
+    const std::size_t start = AlignUp(m_Offset, alignment);
+    const std::uint64_t bytes = (std::uint64_t)sizeof(T) * count;
 
     if (start > capacity() || bytes > capacity() - start)
-      throw std::bad_alloc();
+      throw std::runtime_error("Arena::allocate");
 
     m_Offset = start + bytes;
     return reinterpret_cast<T *>(base() + start);
@@ -85,32 +86,5 @@ private:
 
   std::byte *base() noexcept { return m_Buffer.data(); }
   const std::byte *base() const noexcept { return m_Buffer.data(); }
-};
-
-// ScratchArena is used for temporary memory and must be outlived by the main
-// Arena it belongs to
-class ScratchArena {
-public:
-  // Arena should NEVER be NULL
-  explicit ScratchArena(Logos::Memory::Arena &arena)
-      : m_Arena(arena), m_BeginOffset(m_Arena.offset()) {}
-
-  ScratchArena(const ScratchArena &) = delete;
-  ScratchArena &operator=(const ScratchArena &) = delete;
-
-  ~ScratchArena() noexcept { m_Arena.rewind(m_BeginOffset); }
-
-  template <class T>
-  T *allocate(std::size_t count = 1, std::size_t alignment = alignof(T)) {
-    return m_Arena.allocate<T>(count, alignment);
-  }
-
-  std::size_t offset() const { return m_Arena.offset(); }
-
-  void rewind(std::size_t offset) { m_Arena.rewind(offset); }
-
-private:
-  Logos::Memory::Arena &m_Arena;
-  std::size_t m_BeginOffset;
 };
 } // namespace Logos::Memory
