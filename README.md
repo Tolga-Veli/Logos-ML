@@ -1,10 +1,8 @@
 # Logos-ML
-
 A **C++ neural network framework built from scratch** focused on **explicit memory management**, **simplicity** and **clarity**, with an implementation of training a multilayer perceptron on the **MNIST** dataset.
 
 
 ## Overview
-
 Logos-ML explores the internal mechanics of machine learning systems by implementing core components manually:
 
 - memory buffers  
@@ -18,7 +16,6 @@ The project avoids external ML libraries.
 
 
 ## Features
-
 - Custom **aligned memory allocation**
 - Move-only **matrix abstraction**
 - **Linear Layers**
@@ -29,7 +26,6 @@ The project avoids external ML libraries.
 
 
 ## Abstractions
-
 The implementation is performance-conscious and minimal.
 
 ### Buffer
@@ -45,7 +41,6 @@ The implementation is performance-conscious and minimal.
 
 
 ## Architecture Overview
-
 High-level components:
 
 - **Buffer** — aligned memory management  
@@ -59,7 +54,6 @@ High-level components:
 
 
 ## Example: MNIST Model
-
 The included model trains a multilayer perceptron with:
 
 - Input layer: **784** (28×28)
@@ -72,7 +66,6 @@ Training, inference, and evaluation are implemented explicitly without high-leve
 
 
 ## Build
-
 This project uses **CMake**.
 
 From the project root:
@@ -86,11 +79,10 @@ cmake --build .
 
 
 ## MNIST Setup
-
 To run MNIST training, use the provided Python helper script to download and prepare the dataset.
+The python script must be ran in the same folder as the program executable.
 
 ### Requirements
-
 - **Python** 3.9–3.12  
 - **Python packages**
   - `tensorflow_datasets`
