@@ -72,7 +72,7 @@ From the project root:
 MSVC:
 ```bash
 cmake -S . -B build
-cmake --build . --config Release
+cmake --build build --config Release
 ```
 
 GCC:
