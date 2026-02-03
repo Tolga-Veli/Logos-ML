@@ -9,7 +9,7 @@ public:
   virtual ~ILayer() = default;
 
   virtual void Forward(linalg::MatrixView<const T> in,
-                       linalg::MatrixView<T> out) = 0;
+                       linalg::MatrixView<T> out, bool cache) = 0;
   virtual void Backward(linalg::MatrixView<const T> prev,
                         linalg::MatrixView<T> curr) = 0;
 

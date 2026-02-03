@@ -2,8 +2,6 @@
 
 #include <cstddef>
 #include <cstring>
-#include <new>
-#include <stdexcept>
 
 #include "MemoryUtility.hpp"
 

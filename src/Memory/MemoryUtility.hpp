@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <stdexcept>
 
 namespace Logos::Memory {
 

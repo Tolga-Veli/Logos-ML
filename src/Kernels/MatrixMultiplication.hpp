@@ -1,17 +1,15 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
 
-#include "Math/ArenaMatrix.hpp"
-#include "Math/Matrix.hpp"
 #include "Math/MatrixView.hpp"
 
 namespace Logos::linalg {
-
 template <class T>
-inline void matmul_row_major(MatrixView<const T> A, MatrixView<const T> B,
-                             MatrixView<T> out) {
+inline void matmul(MatrixView<const T> A, MatrixView<const T> B,
+                   MatrixView<T> out) {
   if (A.cols() != B.rows() || out.rows() != A.rows() || out.cols() != B.cols())
     throw std::logic_error("matmul_row_major: shape mismatch");
 
@@ -32,88 +30,55 @@ inline void matmul_row_major(MatrixView<const T> A, MatrixView<const T> B,
 }
 
 template <class T>
-inline void matmul_col_major(MatrixView<const T> A, MatrixView<const T> B,
-                             MatrixView<T> out) {
-  if (A.cols() != B.rows() || out.rows() != A.rows() || out.cols() != B.cols())
-    throw std::logic_error("matmul_col_major: shape mismatch");
+inline void matmul_transposeA(MatrixView<const T> A, MatrixView<const T> B,
+                              MatrixView<T> out) {
+  if (A.rows() != B.rows() || out.rows() != A.cols() || out.cols() != B.cols())
+    throw std::logic_error("matmul_transposeA: shape mismatch");
+  if (!A.is_row_major_contiguous() || !B.is_row_major_contiguous() ||
+      !out.is_row_major_contiguous())
+    throw std::logic_error(
+        "matmul_transposeA: requires row-major contiguous views");
 
-  if (!A.is_col_major_contiguous() || !B.is_col_major_contiguous() ||
-      !out.is_col_major_contiguous())
-    throw std::logic_error("matmul_col_major: requires col-major contiguous");
+  // A = [N x M]
+  // B = [N x P]
+  // out = [M x P]
 
-  const auto N = A.rows(), K = A.cols(), M = B.cols();
+  const auto N = A.rows(), M = A.cols(), P = B.cols();
   const auto X = A.data(), Y = B.data();
   auto Z = out.data();
-  std::fill(Z, Z + N * M, T{});
-  for (std::size_t k = 0; k < M; k++)
-    for (std::size_t j = 0; j < K; j++) {
-      const T val = Y[k * K + j];
-      for (std::size_t i = 0; i < N; i++)
-        Z[k * N + i] += val * X[j * N + i];
+
+  std::fill(Z, Z + M * P, T{});
+
+  for (std::size_t i = 0; i < M; i++)
+    for (std::size_t k = 0; k < N; k++) {
+      const auto val = X[k * M + i];
+      for (std::size_t j = 0; j < P; j++)
+        Z[i * P + j] += val * Y[k * P + j];
     }
 }
-
 template <class T>
-inline void matmul(MatrixView<const T> A, MatrixView<const T> B,
-                   MatrixView<T> out) {
-  if (A.cols() != B.rows() || out.rows() != A.rows() ||
-      out.cols() != B.cols()) {
-    throw std::logic_error("matmul: shape mismatch");
-  }
+inline void matmul_transposeB(MatrixView<const T> A, MatrixView<const T> B,
+                              MatrixView<T> out) {
+  if (A.cols() != B.cols() || out.rows() != A.rows() || out.cols() != B.rows())
+    throw std::logic_error("matmul_transposeB: shape mismatch");
 
-  if (A.is_row_major_contiguous() && B.is_row_major_contiguous() &&
-      out.is_row_major_contiguous())
-    matmul_row_major(A, B, out);
+  if (!A.is_row_major_contiguous() || !B.is_row_major_contiguous() ||
+      !out.is_row_major_contiguous())
+    throw std::logic_error(
+        "matmul_transposeB: requires row-major contiguous views");
 
-  else if (A.is_col_major_contiguous() && B.is_col_major_contiguous() &&
-           out.is_col_major_contiguous())
-    matmul_col_major(A, B, out);
-  else {
-    // generic implementation fallback
-    if (A.cols() != B.rows() || out.rows() != A.rows() ||
-        out.cols() != B.cols())
-      throw std::logic_error("matmul_generic: shape mismatch");
-
-    const std::size_t N = A.rows(), K = A.cols(), M = B.cols();
-    for (std::size_t i = 0; i < N; i++)
-      for (std::size_t j = 0; j < M; j++)
-        out(i, j) = T{};
-
-    for (std::size_t i = 0; i < N; i++)
-      for (std::size_t k = 0; k < K; k++) {
-        const T a = A(i, k);
-        for (std::size_t j = 0; j < M; j++)
-          out(i, j) += a * B(k, j);
-      }
-  }
-}
-
-template <class T>
-inline void matmul(const Matrix<T> &A, const Matrix<T> &B, Matrix<T> &out) {
-  if (A.cols() != B.rows())
-    throw std::logic_error("matmul(Matrix): shape mismatch");
-
-  const auto N = A.rows(), M = B.cols();
-  if (out.rows() != N || out.cols() != M)
-    out = Matrix<T>(N, M);
-  else
-    out.fill_zeroes();
-
-  matmul(A.cview(), B.cview(), out.view());
-}
-
-template <class T>
-inline void matmul(const ArenaMatrix<T> &A, const ArenaMatrix<T> &B,
-                   ArenaMatrix<T> &out) {
-  if (A.cols() != B.rows())
-    throw std::logic_error("matmul(ArenaMatrix): shape mismatch");
-
-  const auto N = A.rows(), M = B.cols();
-  if (out.rows() != N || out.cols() != M)
-    out.allocate(N, M);
-  else
-    out.fill_zeroes();
-
-  matmul(A.cview(), B.cview(), out.view());
+  // A = [N x M]
+  // B = [P x M]
+  // out = [N x P]
+  const auto N = A.rows(), M = A.cols(), P = B.rows();
+  const auto X = A.data(), Y = B.data();
+  auto Z = out.data();
+  for (std::size_t i = 0; i < N; i++)
+    for (std::size_t j = 0; j < P; j++) {
+      T sum{0};
+      for (std::size_t k = 0; k < M; k++)
+        sum += X[i * M + k] * Y[j * M + k];
+      Z[i * P + j] = sum;
+    }
 }
 } // namespace Logos::linalg

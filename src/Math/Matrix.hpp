@@ -12,13 +12,31 @@ template <class T> class Matrix {
 public:
   Matrix() = default;
   explicit Matrix(std::size_t rows, std::size_t cols,
-                  std::size_t alignment = Logos::Memory::DEFAULT_ALIGNMENT);
+                  std::size_t alignment = Logos::Memory::DEFAULT_ALIGNMENT)
+      : m_Buffer(sizeof(T) * rows * cols, alignment), m_Rows(rows),
+        m_Cols(cols), m_LeadingDim(cols) {}
 
   Matrix(const Matrix &other) = delete;
   Matrix &operator=(const Matrix &other) = delete;
 
-  Matrix(Matrix &&other) noexcept;
-  Matrix &operator=(Matrix &&other) noexcept;
+  Matrix(Matrix &&other) noexcept
+      : m_Buffer(std::move(other.m_Buffer)), m_Rows(other.m_Rows),
+        m_Cols(other.m_Cols), m_LeadingDim(other.m_LeadingDim) {
+    other.m_Rows = other.m_Cols = other.m_LeadingDim = 0;
+  }
+
+  Matrix &operator=(Matrix &&other) noexcept {
+    if (this == &other)
+      return *this;
+
+    m_Buffer = std::move(other.m_Buffer);
+    m_Rows = other.m_Rows;
+    m_Cols = other.m_Cols;
+    m_LeadingDim = other.m_LeadingDim;
+
+    other.m_Rows = other.m_Cols = other.m_LeadingDim = 0;
+    return *this;
+  }
 
   T &operator()(std::size_t row, std::size_t col) {
     return m_Buffer.as<T>()[row * m_LeadingDim + col];

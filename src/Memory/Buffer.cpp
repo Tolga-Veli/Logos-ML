@@ -1,6 +1,8 @@
 #include "Buffer.hpp"
 #include "AlignedAlloc.hpp"
 
+#include <stdexcept>
+
 namespace Logos::Memory {
 Buffer::Buffer(std::size_t size, std::size_t alignment) {
   allocate(size, alignment);
