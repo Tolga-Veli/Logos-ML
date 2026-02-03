@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "Functions.hpp"
+#include "Math/Functions.hpp"
 #include "NeuralNetwork.hpp"
 
 namespace Logos::NeuralNet {

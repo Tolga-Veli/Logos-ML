@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Kernels.hpp"
+#include "Math/Kernels.hpp"
 #include "Layer.hpp"
 #include <random>
 

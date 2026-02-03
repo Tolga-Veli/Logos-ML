@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "Arena.hpp"
-#include "Linear.hpp"
-#include "ReLU.hpp"
+#include "Layers/Linear.hpp"
+#include "Layers/ReLU.hpp"
+#include "Memory/Arena.hpp"
 
 namespace Logos::NeuralNet {
 using Matrix = linalg::Matrix<float>;
@@ -28,7 +28,7 @@ private:
   Linear<float> fc1, fc2;
   ReLU<float> relu;
 
-  Matrix A1, H1, logits, probs, dA1, dH1, dLogits, dX;
+  Matrix A1, H1, logits, dA1, dH1, dLogits, dX;
 };
 
 class TrainModel {

@@ -3,4 +3,5 @@
 build/
 compile_commands.json
 .clangd
-
+.vs/
+out/
