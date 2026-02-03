@@ -7,18 +7,19 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Math/ArenaMatrix.hpp"
 #include "Matrix.inl"
 
 namespace Logos::NeuralNet {
 template <class T>
-inline void Softmax(const linalg::Matrix<T> &logits, linalg::Matrix<T> &probs) {
-
+inline void Softmax(linalg::MatrixView<const T> logits,
+                    linalg::MatrixView<T> probs) {
   const auto N = logits.rows(), M = logits.cols();
   if (N == 0 || M == 0)
     throw std::logic_error("Softmax: empty logits");
 
   if (probs.rows() != N || probs.cols() != M)
-    probs = linalg::Matrix<T>(N, M);
+    throw std::logic_error("Softmax: shape mismatch");
 
   for (std::size_t i = 0; i < N; i++) {
     T maxv = std::numeric_limits<T>::lowest();
@@ -39,16 +40,35 @@ inline void Softmax(const linalg::Matrix<T> &logits, linalg::Matrix<T> &probs) {
 }
 
 template <class T>
-inline T CrossEntropy(const linalg::Matrix<T> &probs,
+inline void Softmax(const linalg::Matrix<T> &logits, linalg::Matrix<T> &probs) {
+  const auto N = logits.rows(), M = logits.cols();
+  if (probs.rows() != N || probs.cols() != M)
+    probs = linalg::Matrix<T>(N, M);
+
+  Softmax(logits.cview(), probs.view());
+}
+
+template <class T>
+inline void Softmax(const linalg::ArenaMatrix<T> &logits,
+                    linalg::ArenaMatrix<T> &probs) {
+  const auto N = logits.rows(), M = logits.cols();
+  if (probs.rows() != N || probs.cols() != M)
+    probs.allocate(N, M);
+
+  Softmax(logits.cview(), probs.view());
+}
+
+template <class T>
+inline T CrossEntropy(linalg::MatrixView<const T> probs,
                       const std::vector<std::uint8_t> &labels,
-                      linalg::Matrix<T> &dLogits) {
+                      linalg::MatrixView<T> dLogits) {
 
   const auto N = probs.rows(), M = probs.cols();
   if (N == 0 || M == 0 || labels.size() != N)
     throw std::logic_error("CrossEntropy: wrong input");
 
   if (dLogits.rows() != N || dLogits.cols() != M)
-    dLogits = linalg::Matrix<T>(N, M);
+    throw std::logic_error("CrossEntropy: wrong input");
 
   const T invN = T{1} / N;
   const T eps = T{1e-12};
@@ -62,7 +82,7 @@ inline T CrossEntropy(const linalg::Matrix<T> &probs,
     T p_y = probs(i, y);
     if (p_y < eps)
       p_y = eps;
-    loss_sum += -std::log(p_y);
+    loss_sum -= std::log(p_y);
 
     for (std::size_t j = 0; j < M; j++) {
       T g = probs(i, j) * invN;
@@ -76,7 +96,27 @@ inline T CrossEntropy(const linalg::Matrix<T> &probs,
 }
 
 template <class T>
-inline std::size_t ArgmaxRow(const linalg::Matrix<T> &A, std::size_t row) {
+inline T CrossEntropy(const linalg::Matrix<T> &probs,
+                      const std::vector<std::uint8_t> &labels,
+                      linalg::Matrix<T> &dLogits) {
+  const auto N = probs.rows(), M = probs.cols();
+  if (dLogits.rows() != N || dLogits.cols() != M)
+    dLogits = linalg::Matrix<T>(N, M);
+  return CrossEntropy(probs.cview(), labels, dLogits.view());
+}
+
+template <class T>
+inline T CrossEntropy(const linalg::ArenaMatrix<T> &probs,
+                      const std::vector<std::uint8_t> &labels,
+                      linalg::ArenaMatrix<T> &dLogits) {
+  const auto N = probs.rows(), M = probs.cols();
+  if (dLogits.rows() != N || dLogits.cols() != M)
+    dLogits.allocate(N, M);
+  return CrossEntropy(probs.cview(), labels, dLogits.view());
+}
+
+template <class T>
+inline std::size_t ArgmaxRow(linalg::MatrixView<const T> A, std::size_t row) {
   const auto N = A.rows(), M = A.cols();
   if (row >= N || M == 0)
     throw std::logic_error("ArgmaxRow: out of bounds");
@@ -91,5 +131,15 @@ inline std::size_t ArgmaxRow(const linalg::Matrix<T> &A, std::size_t row) {
     }
   }
   return best;
+}
+
+template <class T>
+inline std::size_t ArgmaxRow(const linalg::Matrix<T> &A, std::size_t row) {
+  return ArgmaxRow(A.cview(), row);
+}
+
+template <class T>
+inline std::size_t ArgmaxRow(const linalg::ArenaMatrix<T> &A, std::size_t row) {
+  return ArgmaxRow(A.cview(), row);
 }
 } // namespace Logos::NeuralNet

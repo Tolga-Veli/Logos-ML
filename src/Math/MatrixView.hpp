@@ -1,8 +1,9 @@
 #pragma once
 #include <cassert>
 #include <cstddef>
+#include <stdexcept>
 
-namespace Logos {
+namespace Logos ::linalg {
 // General strided matrix view (supports row-major, col-major, subviews,
 // transpose)
 template <class T> class MatrixView {
@@ -40,21 +41,11 @@ public:
                   static_cast<std::ptrdiff_t>(c) * m_ColStride];
   }
 
-  static constexpr MatrixView RowMajor(T *data, std::size_t rows,
-                                       std::size_t cols) noexcept {
-    return MatrixView(data, rows, cols, static_cast<std::ptrdiff_t>(cols), 1);
-  }
-
-  static constexpr MatrixView ColMajor(T *data, std::size_t rows,
-                                       std::size_t cols) noexcept {
-    return MatrixView(data, rows, cols, 1, static_cast<std::ptrdiff_t>(rows));
-  }
-
   constexpr MatrixView subview(std::size_t r0, std::size_t c0,
                                std::size_t rcount,
                                std::size_t ccount) const noexcept {
-    assert(r0 + rcount <= m_Rows);
-    assert(c0 + ccount <= m_Cols);
+    if (r0 + rcount > m_Rows || c0 + ccount > m_Cols)
+      throw std::logic_error("MatrixView::subview out of range");
 
     T *p = m_Data + static_cast<std::ptrdiff_t>(r0) * m_RowStride +
            static_cast<std::ptrdiff_t>(c0) * m_ColStride;
@@ -72,4 +63,4 @@ private:
   std::ptrdiff_t m_RowStride, m_ColStride;
 };
 
-} // namespace Logos
+} // namespace Logos::linalg
