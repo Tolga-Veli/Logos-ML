@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(Logos VERSION 1.0 LANGUAGES CXX)
+project(Logos LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,13 +31,13 @@ source_group(TREE "${SRC_DIR}" PREFIX "src" FILES
 
 if (MSVC)
   target_compile_options(Logos PRIVATE /W4 /permissive-)
-  target_compile_options(Logos PRIVATE 
+  target_compile_options(Logos PRIVATE
     $<$<CONFIG:Debug>:/Od /Zi>
     $<$<CONFIG:Release>:/O2>
   )
 else()
   target_compile_options(Logos PRIVATE -Wall -Wextra -Wpedantic)
-  target_compile_options(Logos PRIVATE 
+  target_compile_options(Logos PRIVATE
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:Release>:-O3>
   )
