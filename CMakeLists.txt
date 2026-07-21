@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(Logos LANGUAGES CXX)
+project(ml-project LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# neovim / clangd
+# Generate compile_commands.json for clangd (neovim)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(ROOT    "${CMAKE_CURRENT_SOURCE_DIR}")
-set(SRC_DIR "${ROOT}/src")
+find_package(BLAS REQUIRED)
+
+set(SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
   "${SRC_DIR}/*.inl"
@@ -21,24 +22,23 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
 )
 
 add_executable(Logos ${SOURCES} ${HEADERS})
-target_include_directories(Logos PRIVATE  "${SRC_DIR}")
+target_include_directories(ml-project PRIVATE  "${SRC_DIR}")
 
-set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Logos)
-
-source_group(TREE "${SRC_DIR}" PREFIX "src" FILES
-  ${SOURCES} ${HEADERS}
-)
+target_link_libraries(ml-project PRIVATE BLAS::BLAS)
 
 if (MSVC)
-  target_compile_options(Logos PRIVATE /W4 /permissive-)
   target_compile_options(Logos PRIVATE
-    $<$<CONFIG:Debug>:/Od /Zi>
-    $<$<CONFIG:Release>:/O2>
-  )
+        /W4
+        /permissive-
+        $<$<CONFIG:Debug>:/Od /Zi>
+        $<$<CONFIG:Release>:/O2>
+    )
 else()
-  target_compile_options(Logos PRIVATE -Wall -Wextra -Wpedantic)
   target_compile_options(Logos PRIVATE
-    $<$<CONFIG:Debug>:-g -O0>
-    $<$<CONFIG:Release>:-O3>
-  )
+        -Wall
+        -Wextra
+        -Wpedantic
+        $<$<CONFIG:Debug>:-g -O0>
+        $<$<CONFIG:Release>:-O3>
+    )
 endif()

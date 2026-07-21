@@ -9,15 +9,14 @@ class Strides {
 public:
   Strides() = default;
 
-  explicit Strides(std::vector<size_t> strides)
-      : m_Strides(std::move(strides)) {}
+  explicit Strides(std::vector<int> strides) : m_Strides(std::move(strides)) {}
 
   [[nodiscard]]
   static Strides Contiguous(const Shape &shape) {
-    std::vector<size_t> strides(shape.rank());
-    size_t stride = 1;
+    std::vector<int> strides(shape.rank());
+    int stride = 1;
 
-    for (size_t idx = shape.rank(); idx-- > 0;) {
+    for (int idx = shape.rank() - 1; idx > 0; idx--) {
       strides[idx] = stride;
       stride *= shape[idx];
     }
@@ -26,21 +25,25 @@ public:
   }
 
   [[nodiscard]]
-  size_t operator[](size_t idx) const {
+  int operator[](int idx) const {
     return m_Strides[idx];
   }
 
   [[nodiscard]]
-  size_t rank() const {
+  int rank() const {
     return m_Strides.size();
   }
 
   [[nodiscard]]
-  const std::vector<size_t> &values() const {
+  const std::vector<int> &values() const {
     return m_Strides;
   }
 
+  [[nodiscard]] bool operator==(const Strides &other) const {
+    return m_Strides == other.m_Strides;
+  }
+
 private:
-  std::vector<size_t> m_Strides;
+  std::vector<int> m_Strides;
 };
 } // namespace ml::core

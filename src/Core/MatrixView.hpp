@@ -7,32 +7,22 @@ namespace ml::core {
 
 // a thin-wrapper used for linear algebra operations (matmul)
 template <class T> struct MatrixView {
-  MatrixView(Tensor<T> &tensor) { assert(tensor.rank() == 2); }
-
-  T *data() { return m_Data; }
-  const T *data() const { return m_Data; }
-
-  std::size_t rows() const { return m_Rows; }
-  std::size_t cols() const { return m_Cols; }
-  std::size_t row_stride() const { return m_RowStride; }
-  std::size_t col_stride() const { return m_ColStride; }
-
-  bool is_row_major() const {
-    return (m_RowStride == m_Cols && m_ColStride == 1);
+  explicit MatrixView(const Tensor<T> &tensor)
+      : m_Data(tensor.data()), m_Rows(tensor.GetShape()[0]),
+        m_Cols(tensor.GetShape()[1]), m_LeadingDim(tensor.GetStrides()[0]) {
+    assert(tensor.rank() == 2);
+    assert(tensor.GetStrides()[1] == 1);
   }
 
-  bool is_col_major() const {
-    return (m_RowStride == 1 && m_ColStride == m_Rows);
-  }
+  [[nodiscard]] T *data() { return m_Data; }
+  [[nodiscard]] const T *data() const { return m_Data; }
 
-  T &operator()(std::size_t i, std::size_t j) const {
-    return m_Data[i * m_RowStride + j * m_ColStride];
-  }
+  int rows() const { return m_Rows; }
+  int cols() const { return m_Cols; }
+  int ld() const { return m_LeadingDim; }
 
 private:
   T *m_Data;
-
-  std::size_t m_Rows, m_Cols;
-  std::size_t m_RowStride, m_ColStride;
+  int m_Rows, m_Cols, m_LeadingDim;
 };
 } // namespace ml::core
