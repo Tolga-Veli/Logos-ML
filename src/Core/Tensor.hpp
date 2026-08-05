@@ -21,7 +21,7 @@ public:
       : m_Storage(std::make_shared<Storage<T>>(shape.num_elements())),
         m_Shape(shape), m_Strides(Strides::Contiguous(shape)), m_Offset(0) {}
 
-  Tensor(const Shape &shape, const T &value) : Tensor(shape) { Fill(value); }
+  Tensor(const Shape &shape, const T &value) : Tensor(shape) { fill(value); }
 
   Tensor(const Tensor &other)
       : m_Storage(std::make_shared<Storage<T>>(other.num_elements())),

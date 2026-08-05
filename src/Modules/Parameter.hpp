@@ -15,7 +15,7 @@ public:
 
   void zero_grad() {
     if (grad.has_value())
-      grad->Fill(0);
+      grad->fill(T{0});
   }
 };
 

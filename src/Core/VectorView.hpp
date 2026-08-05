@@ -30,12 +30,12 @@ private:
 
 template <class T> VectorView<T> as_vector(Tensor<T> &t) {
   assert(t.rank() == 1);
-  return {t.data(), t.shape()[0]};
+  return VectorView<T>(t);
 }
 
 template <class T> VectorView<const T> as_vector(const Tensor<T> &t) {
   assert(t.rank() == 1);
-  return {t.data(), t.shape()[0]};
+  return VectorView<const T>(t);
 }
 
 } // namespace ml::core

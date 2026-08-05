@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 namespace ml::ops {
 using core::Tensor;
@@ -17,10 +18,10 @@ template <class T> Tensor<T> relu(const Tensor<T> &x) {
   Tensor<T> out(x.shape());
   const T *src = x.data();
   T *dst = out.data();
-  const int n = x.num_elements();
+  const auto n = x.num_elements();
 
   for (int i = 0; i < n; i++)
-    dst[i] = std::max(src[i], 0);
+    dst[i] = std::max(src[i], T{0});
 
   return out;
 }
@@ -33,9 +34,9 @@ Tensor<T> relu_backward(const Tensor<T> &grad_out, const Tensor<T> &x) {
   assert(grad_out.num_elements() == x.num_elements());
 
   Tensor<T> grad_in(x.shape());
-  const T *g = grad_out.data(), src = x.data();
+  const T *g = grad_out.data(), *src = x.data();
   T *dst = grad_in.data();
-  const int n = x.num_elements();
+  const auto n = x.num_elements();
 
   for (int i = 0; i < n; i++)
     dst[i] = src[i] > T{0} ? g[i] : T{0};

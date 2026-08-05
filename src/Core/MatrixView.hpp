@@ -34,12 +34,12 @@ private:
 
 template <class T> inline MatrixView<T> as_matrix(Tensor<T> &t) {
   assert(t.rank() == 2);
-  return {t.data(), t.shape()[0], t.shape()[1]};
+  return MatrixView<T>(t);
 }
 
 template <class T> inline MatrixView<const T> as_matrix(const Tensor<T> &t) {
   assert(t.rank() == 2);
-  return {t.data(), t.shape()[0], t.shape()[1]};
+  return MatrixView<const T>(t);
 }
 
 } // namespace ml::core

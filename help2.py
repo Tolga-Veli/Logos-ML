@@ -3,11 +3,11 @@ import tensorflow_datasets as tfds
 import numpy as np
 
 DATA_DIR = "data"
-os.makedirs(DATA_DIR,exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+
 
 def ds_to_numpy(ds):
-    images = []
-    labels = []
+    images, labels = [], []
 
     for image, label in ds:
         images.append(image.numpy())
@@ -15,22 +15,24 @@ def ds_to_numpy(ds):
 
     return np.array(images), np.array(labels)
 
+
 print("Downloading and processing MNIST dataset...")
+
 train_ds, test_ds = tfds.load("mnist", split=["train", "test"], as_supervised=True)
 
 train_images, train_labels = ds_to_numpy(train_ds)
 test_images, test_labels = ds_to_numpy(test_ds)
 
-train_images = train_images.astype(np.float32) / 255.0
-test_images = test_images.astype(np.float32) / 255.0
+train_images = train_images.reshape(-1, 784).astype(np.float32) / 255.0
+test_images = test_images.reshape(-1, 784).astype(np.float32) / 255.0
 
-train_labels = train_labels.astype(np.uint8)
-test_labels = test_labels.astype(np.uint8)
+train_labels = train_labels.astype(np.int32)
+test_labels = test_labels.astype(np.int32)
 
-train_images.tofile(os.path.join(DATA_DIR,"train_images.mat"))
-train_labels.tofile(os.path.join(DATA_DIR,"train_labels.mat"))
-test_images.tofile(os.path.join(DATA_DIR,"test_images.mat"))
-test_labels.tofile(os.path.join(DATA_DIR,"test_labels.mat"))
+train_images.tofile(os.path.join(DATA_DIR, "train_images.bin"))
+train_labels.tofile(os.path.join(DATA_DIR, "train_labels.bin"))
+test_images.tofile(os.path.join(DATA_DIR, "test_images.bin"))
+test_labels.tofile(os.path.join(DATA_DIR, "test_labels.bin"))
 
-print(f"Data generated successfully in {os.path.abspath(DATA_DIR)}")
-
+print(f"Shapes: train={train_images.shape} test={test_images.shape}")
+print(f"Done — data in {os.path.abspath(DATA_DIR)}")

@@ -1,91 +1,110 @@
-#pragma once
+#include "Data/DataLoader.hpp"
+#include "Math/loss.hpp"
+#include "Modules/Linear.hpp"
+#include "Modules/ReLU.hpp"
+#include "Modules/Sequential.hpp"
+#include "Optimizer/SGD.hpp"
 
-#include "Core/MatrixView.hpp"
-#include "Math/BlasOps.hpp"
+// renders a single image from a (N, 784) tensor to the terminal
+inline void render_image(const ml::core::Tensor<float> &images, int index,
+                         int label, int predicted = -1) {
 
-#include <cblas.h>
+  static const char *shades[] = {" ", "░", "▒", "▓", "█"};
+  const float *img = images.data() + index * 784;
 
-namespace ml::linalg {
+  printf("\n");
+  for (int r = 0; r < 28; ++r) {
+    for (int c = 0; c < 28; ++c) {
+      float px = img[r * 28 + c];
+      int shade = static_cast<int>(px * 4.99f);     // 0-4
+      printf("%s%s", shades[shade], shades[shade]); // doubled for aspect ratio
+    }
+    printf("\n");
+  }
 
-template <class T> using MatrixView = core::MatrixView<T>;
-
-// C := alpha * op(A) * op(B) + beta * C   (written into `out`, i.e. C)
-//
-// op(A) is transA==Yes ? A^T : A,  shape M x K
-// op(B) is transB==Yes ? B^T : B,  shape K x N
-// out (C) must be shape M x N
-//
-// M, K come from A (adjusted for transA); N, K come from B (adjusted for
-// transB) -- K must agree from both sides, checked by the assert below.
-template <class T>
-void matmul(Transpose transA, Transpose transB, T alpha, MatrixView<const T> A,
-            MatrixView<const T> B, T beta, MatrixView<T> out) {
-  const auto opA = (transA == Transpose::Yes ? CblasTrans : CblasNoTrans);
-  const auto opB = (transB == Transpose::Yes ? CblasTrans : CblasNoTrans);
-
-  const auto M = (transA == Transpose::Yes ? A.cols() : A.rows());
-  const auto K = (transA == Transpose::Yes ? A.rows() : A.cols());
-  const auto N = (transB == Transpose::Yes ? B.rows() : B.cols());
-
-  // Shared contraction dimension must match on both operands.
-  assert(K == (transB == Transpose::Yes ? B.cols() : B.rows()));
-  // Output shape must match M x N derived above.
-  assert(out.rows() == M && out.cols() == N);
-
-  detail::BlasDispatch<T>::gemm(CblasRowMajor, opA, opB, M, N, K, alpha,
-                                A.data(), A.ld(), B.data(), B.ld(), beta,
-                                out.data(), out.ld());
+  if (predicted == -1)
+    printf("Label: %d\n", label);
+  else
+    printf("Label: %d  Predicted: %d  %s\n", label, predicted,
+           predicted == label ? "✓" : "✗");
 }
 
-// Convenience: C = op(A) * op(B)   (alpha=1, beta=0, i.e. out is fully
-// overwritten). This is the common case; use the full overload when you need
-// accumulation.
-template <class T>
-void matmul(Transpose transA, Transpose transB, MatrixView<const T> A,
-            MatrixView<const T> B, MatrixView<T> out) {
-  matmul(transA, transB, T{1}, A, B, T{0}, out);
+int cnt = 0;
+
+void *operator new(std::size_t size) {
+  cnt++;
+  if (void *ptr = std::malloc(size))
+    return ptr;
+
+  throw std::bad_alloc{};
 }
 
-// C := alpha * A * A^T + beta * C   (trans == No)
-// C := alpha * A^T * A + beta * C   (trans == Yes)
-// C must be square (N x N); only the `uplo` triangle of C is written --
-// the other triangle is left untouched by BLAS, so a freshly-allocated
-// `out` will have garbage in the unwritten half unless you fill it or
-// mirror it yourself afterward.
-template <class T>
-void syrk(Triangular tri, Transpose trans, T alpha, MatrixView<const T> A,
-          T beta, MatrixView<T> out) {
-  const auto ul = (tri == Triangular::Upper ? CblasUpper : CblasLower);
-  const auto op = (trans == Transpose::Yes ? CblasTrans : CblasNoTrans);
+void operator delete(void *ptr) noexcept { std::free(ptr); }
 
-  const auto N = (trans == Transpose::Yes ? A.cols() : A.rows());
-  const auto K = (trans == Transpose::Yes ? A.rows() : A.cols());
+void *operator new[](std::size_t size) {
+  cnt++;
+  if (void *ptr = std::malloc(size))
+    return ptr;
 
-  assert(out.rows() == N && out.cols() == N);
-  detail::BlasDispatch<T>::syrk(CblasRowMajor, ul, op, N, K, alpha, A.data(),
-                                A.ld(), beta, out.data(), out.ld());
+  throw std::bad_alloc{};
 }
 
-// Solves for X in-place inside `B`, overwriting it:
-//   side == Left:  op(A) * X = alpha * B   (A is M x M, B is M x N)
-//   side == Right: X * op(A) = alpha * B   (A is N x N, B is M x N)
-// `diag == Unit` tells BLAS to treat A's diagonal as all-1s and ignore
-// whatever is actually stored there.
-template <class T>
-void trsm(Side side, Triangular tri, Transpose trans, Diagonal diag, T alpha,
-          MatrixView<const T> A, MatrixView<T> B) {
-  const auto sd = (side == Side::Left ? CblasLeft : CblasRight);
-  const auto ul = (tri == Triangular::Upper ? CblasUpper : CblasLower);
-  const auto op = (trans == Transpose::Yes ? CblasTrans : CblasNoTrans);
-  const auto dg = (diag == Diagonal::Unit ? CblasUnit : CblasNonUnit);
+void operator delete[](void *ptr) noexcept { std::free(ptr); }
 
-  const auto M = B.rows(), N = B.cols();
-  const int expA = (side == Side::Left ? M : N);
+int main() {
 
-  assert(A.rows() == expA && A.cols() == expA);
+  auto train_images =
+      ml::data::load_binary("data/train_images.bin", {60'000, 784});
+  auto train_labels =
+      ml::data::load_binary<int>("data/train_labels.bin", {60'000});
 
-  detail::BlasDispatch<T>::trsm(CblasRowMajor, sd, ul, op, dg, M, N, alpha,
-                                A.data(), A.ld(), B.data(), B.ld());
+  auto test_images =
+      ml::data::load_binary("data/test_images.bin", {10'000, 784});
+  auto test_labels =
+      ml::data::load_binary<int>("data/test_labels.bin", {10'000});
+
+  constexpr int BATCH_SIZE = 32, EPOCHS = 10;
+  constexpr float LEARNING_RATE = 0.01f, MOMENTUM = 0.0f, WEIGHT_DECAY = 0.0f;
+
+  ml::data::DataLoader train_loader(std::move(train_images),
+                                    std::move(train_labels), BATCH_SIZE, true);
+  ml::data::DataLoader test_loader(std::move(test_images),
+                                   std::move(test_labels), BATCH_SIZE, false);
+
+  ml::core::Sequential<float> model;
+  model.add<ml::core::Linear<float>>(784, 128);
+  model.add<ml::core::ReLU<float>>();
+  model.add<ml::core::Linear<float>>(128, 64);
+  model.add<ml::core::ReLU<float>>();
+  model.add<ml::core::Linear<float>>(64, 10);
+
+  ml::optim::SGD<float> optimizer(model.parameters(), LEARNING_RATE, MOMENTUM,
+                                  WEIGHT_DECAY);
+
+  for (int epoch = 1; epoch <= EPOCHS; epoch++) {
+    train_loader.reset();
+    cnt = 0;
+
+    float total_loss = 0.0f;
+    int batches = 0;
+    ml::data::Batch batch;
+
+    while (train_loader.next(batch)) {
+      auto logits = model.forward(batch.images);
+      auto [loss, probs] = ml::ops::cross_entropy(logits, batch.labels);
+
+      batches++;
+      total_loss += loss;
+
+      optimizer.zero_grad();
+
+      auto grad = ml::ops::cross_entropy_backward(probs, batch.labels);
+
+      model.backward(grad);
+      optimizer.step();
+    }
+
+    printf("Epoch %2d loss %.4f\n", epoch, total_loss / batches);
+    printf("Allocations: %d\n", cnt);
+  }
 }
-
-} // namespace ml::linalg

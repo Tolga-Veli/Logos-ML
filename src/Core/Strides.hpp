@@ -16,7 +16,7 @@ public:
     std::vector<int> strides(shape.rank());
     int stride = 1;
 
-    for (int idx = shape.rank() - 1; idx > 0; idx--) {
+    for (int idx = shape.rank() - 1; idx >= 0; idx--) {
       strides[idx] = stride;
       stride *= shape[idx];
     }
