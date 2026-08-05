@@ -1,8 +1,16 @@
 #pragma once
 
+#include "Core/MatrixView.hpp"
+#include "Core/Tensor.hpp"
+#include "Core/VectorView.hpp"
+
 #include <cblas.h>
 
 namespace ml::linalg {
+using core::MatrixView;
+using core::Tensor;
+using core::VectorView;
+
 enum class Transpose { No = 0, Yes };
 enum class Triangular { Upper = 0, Lower };
 enum class Side { Left = 0, Right };
@@ -21,17 +29,11 @@ template <> struct BlasDispatch<float> {
   static constexpr auto copy = cblas_scopy;
   // Level 2
   static constexpr auto gemv = cblas_sgemv;
-  static constexpr auto symv = cblas_ssymv;
-  static constexpr auto trmv = cblas_strmv;
-  static constexpr auto trsv = cblas_strsv;
-  static constexpr auto ger = cblas_sger;
   // Level 3
   static constexpr auto gemm = cblas_sgemm;
-  static constexpr auto symm = cblas_ssymm;
-  static constexpr auto syrk = cblas_ssyrk;
-  static constexpr auto syr2k = cblas_ssyr2k;
-  static constexpr auto trmm = cblas_strmm;
-  static constexpr auto trsm = cblas_strsm;
+
+  // mixed precision: float inputs, double accumulation, double output
+  static constexpr auto dsdot = cblas_dsdot;
 };
 
 template <> struct BlasDispatch<double> {
@@ -44,20 +46,9 @@ template <> struct BlasDispatch<double> {
   static constexpr auto copy = cblas_dcopy;
   // Level 2
   static constexpr auto gemv = cblas_dgemv;
-  static constexpr auto symv = cblas_dsymv;
-  static constexpr auto trmv = cblas_dtrmv;
-  static constexpr auto trsv = cblas_dtrsv;
-  static constexpr auto ger = cblas_dger;
   // Level 3
   static constexpr auto gemm = cblas_dgemm;
-  static constexpr auto symm = cblas_dsymm;
-  static constexpr auto syrk = cblas_dsyrk;
-  static constexpr auto syr2k = cblas_dsyr2k;
-  static constexpr auto trmm = cblas_dtrmm;
-  static constexpr auto trsm = cblas_dtrsm;
 };
-
-inline constexpr auto dsdot = cblas_dsdot;
 
 } // namespace detail
 } // namespace ml::linalg

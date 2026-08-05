@@ -1,10 +1,8 @@
 #pragma once
 
 #include "BlasOps.hpp"
-#include "Core/VectorView.hpp"
 
 namespace ml::linalg {
-template <class T> using VectorView = core::VectorView<T>;
 
 // x := alpha * x   (in place)
 template <class T> void scal(T alpha, VectorView<T> x) {
@@ -67,6 +65,7 @@ template <>
 [[nodiscard]] inline double dot_precise<float>(VectorView<const float> x,
                                                VectorView<const float> y) {
   assert(x.size() == y.size());
-  return detail::dsdot(x.size(), x.data(), x.inc(), y.data(), y.inc());
+  return detail::BlasDispatch<float>::dsdot(x.size(), x.data(), x.inc(),
+                                            y.data(), y.inc());
 }
 } // namespace ml::linalg

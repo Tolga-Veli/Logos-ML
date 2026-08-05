@@ -77,22 +77,22 @@ public:
   [[nodiscard]] int offset() const { return m_Offset; }
 
   [[nodiscard]]
-  const Shape &GetShape() const {
+  const Shape &shape() const {
     return m_Shape;
   }
 
   [[nodiscard]]
-  const Strides &GetStrides() const {
+  const Strides &strides() const {
     return m_Strides;
   }
 
   [[nodiscard]]
-  const Storage<T> &GetStorage() const {
+  const Storage<T> &storage() const {
     return *m_Storage;
   }
 
-  void Fill(const T &value) {
-    if (IsContiguous()) {
+  void fill(const T &value) {
+    if (is_contiguous()) {
       std::fill_n(data(), num_elements(), value);
       return;
     }
@@ -118,7 +118,7 @@ public:
 
   // Checks whether memory layout matches a standard row-major layout.
   [[nodiscard]]
-  bool IsContiguous() const {
+  bool is_contiguous() const {
     if (rank() == 0)
       return true;
 
@@ -131,60 +131,6 @@ public:
     }
 
     return true;
-  }
-
-  /* Slice does NOT move or copy data.
-     It creates a new Tensor with new metadata around the same memory and
-     changes the way we interpret the Tensor
-
-     It works by:
-     1. Reducing the size of one dimension
-     2. Moving the starting offset forward
-
-     Example:
-     Shape:   [10,5]
-     Slice(0,2,6)
-
-     New shape becomes:
-     [4,5]
-
-     And offset shifts:
-     offset += start * stride[dim]
-  */
-  [[nodiscard]] Tensor Slice(int dim, int start, int end) const {
-    assert(dim < rank());
-    assert(start <= end);
-    assert(end <= m_Shape[dim]);
-
-    auto shape = m_Shape.dims();
-    shape[dim] = end - start;
-
-    return Tensor(m_Storage, Shape(std::move(shape)), m_Strides,
-                  m_Offset + start * m_Strides[dim]);
-  }
-
-  /*  Reshape does NOT move or copy data.
-      It creates a new Tensor with new metadata around the same memory and
-      changes the way we interpret the Tensor
-
-      IMPORTANT:
-      This only works if the tensor is contiguous in memory.
-
-      Example:
-      Shape:    [2,3]
-      Data:     [1, 2, 3, 4, 5, 6]
-
-      Reshape to [3,2] becomes:
-      [1, 2]
-      [3, 4]
-      [5, 6]
-  */
-  [[nodiscard]]
-  Tensor Reshape(const Shape &newShape) const {
-    assert(IsContiguous());
-    assert(newShape.num_elements() == num_elements());
-
-    return Tensor(m_Storage, newShape, Strides::Contiguous(newShape), m_Offset);
   }
 
   // T(1,2,3,...) access

@@ -7,22 +7,39 @@ namespace ml::core {
 
 // a thin-wrapper used for linear algebra operations (matmul)
 template <class T> struct MatrixView {
-  explicit MatrixView(const Tensor<T> &tensor)
-      : m_Data(tensor.data()), m_Rows(tensor.GetShape()[0]),
-        m_Cols(tensor.GetShape()[1]), m_LeadingDim(tensor.GetStrides()[0]) {
+  explicit MatrixView(Tensor<T> &tensor)
+      : m_Data(tensor.data()), m_Rows(tensor.shape()[0]),
+        m_Cols(tensor.shape()[1]), m_LeadingDim(tensor.strides()[0]) {
     assert(tensor.rank() == 2);
-    assert(tensor.GetStrides()[1] == 1);
+    assert(tensor.strides()[1] == 1);
   }
 
-  [[nodiscard]] T *data() { return m_Data; }
-  [[nodiscard]] const T *data() const { return m_Data; }
+  explicit MatrixView(const Tensor<std::remove_const_t<T>> &tensor)
+      : m_Data(tensor.data()), m_Rows(tensor.shape()[0]),
+        m_Cols(tensor.shape()[1]), m_LeadingDim(tensor.strides()[0]) {
+    assert(tensor.rank() == 2);
+    assert(tensor.strides()[1] == 1);
+  }
 
-  int rows() const { return m_Rows; }
-  int cols() const { return m_Cols; }
-  int ld() const { return m_LeadingDim; }
+  [[nodiscard]] T *data() noexcept { return m_Data; }
+  [[nodiscard]] const T *data() const noexcept { return m_Data; }
+  [[nodiscard]] int rows() const noexcept { return m_Rows; }
+  [[nodiscard]] int cols() const noexcept { return m_Cols; }
+  [[nodiscard]] int ld() const noexcept { return m_LeadingDim; }
 
 private:
   T *m_Data;
   int m_Rows, m_Cols, m_LeadingDim;
 };
+
+template <class T> inline MatrixView<T> as_matrix(Tensor<T> &t) {
+  assert(t.rank() == 2);
+  return {t.data(), t.shape()[0], t.shape()[1]};
+}
+
+template <class T> inline MatrixView<const T> as_matrix(const Tensor<T> &t) {
+  assert(t.rank() == 2);
+  return {t.data(), t.shape()[0], t.shape()[1]};
+}
+
 } // namespace ml::core

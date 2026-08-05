@@ -21,20 +21,20 @@ file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
   "${SRC_DIR}/*.hpp"
 )
 
-add_executable(Logos ${SOURCES} ${HEADERS})
+add_executable(ml-project ${SOURCES} ${HEADERS})
 target_include_directories(ml-project PRIVATE  "${SRC_DIR}")
 
 target_link_libraries(ml-project PRIVATE BLAS::BLAS)
 
 if (MSVC)
-  target_compile_options(Logos PRIVATE
+  target_compile_options(ml-project PRIVATE
         /W4
         /permissive-
         $<$<CONFIG:Debug>:/Od /Zi>
         $<$<CONFIG:Release>:/O2>
     )
 else()
-  target_compile_options(Logos PRIVATE
+  target_compile_options(ml-project PRIVATE
         -Wall
         -Wextra
         -Wpedantic

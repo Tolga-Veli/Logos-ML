@@ -2,34 +2,40 @@
 
 #include "Core/Tensor.hpp"
 #include <cassert>
-#include <cstddef>
 
 namespace ml::core {
 
 template <class T> class VectorView {
 public:
-  // Built from a rank-1 Tensor. `inc` is BLAS's "increment" -- how many
-  // elements to skip between logical entries. For a Tensor straight out
-  // of the current API this is always 1 (rank-1 tensors are always
-  // contiguous, same invariant as Tensor's last dimension), but the
-  // field exists so a future strided/column view can populate it.
-  explicit VectorView(Tensor<T> &t)
-      : m_Data(t.data()), m_Size(t.GetShape()[0]), m_Inc(t.GetStrides()[0]) {
-    assert(t.rank() == 1);
+  explicit VectorView(Tensor<T> &tensor)
+      : m_Data(tensor.data()), m_Size(tensor.shape()[0]),
+        m_Inc(tensor.strides()[0]) {
+    assert(tensor.rank() == 1);
   }
 
-  explicit VectorView(const Tensor<T> &t)
-      : m_Data(t.data()), m_Size(t.GetShape()[0]), m_Inc(t.GetStrides()[0]) {
-    assert(t.rank() == 1);
+  explicit VectorView(const Tensor<std::remove_const_t<T>> &tensor)
+      : m_Data(tensor.data()), m_Size(tensor.shape()[0]),
+        m_Inc(tensor.strides()[0]) {
+    assert(tensor.rank() == 1);
   }
 
   [[nodiscard]] T *data() const { return m_Data; }
-  [[nodiscard]] size_t size() const { return m_Size; }
-  [[nodiscard]] size_t inc() const { return m_Inc; }
+  [[nodiscard]] int size() const { return m_Size; }
+  [[nodiscard]] int inc() const { return m_Inc; }
 
 private:
   T *m_Data;
-  size_t m_Size, m_Inc;
+  int m_Size, m_Inc;
 };
+
+template <class T> VectorView<T> as_vector(Tensor<T> &t) {
+  assert(t.rank() == 1);
+  return {t.data(), t.shape()[0]};
+}
+
+template <class T> VectorView<const T> as_vector(const Tensor<T> &t) {
+  assert(t.rank() == 1);
+  return {t.data(), t.shape()[0]};
+}
 
 } // namespace ml::core
