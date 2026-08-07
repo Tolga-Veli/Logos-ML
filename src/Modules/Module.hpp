@@ -8,19 +8,25 @@
 
 namespace ml::core {
 
-template <class T> class Module {
+class Module {
 public:
-  using Scalar = T;
-
   virtual ~Module() = default;
 
-  virtual Tensor<T> forward(const Tensor<T> &input) = 0;
-  virtual Tensor<T> backward(const Tensor<T> &grad_out) = 0;
+  virtual void forward(const Tensor &X, Tensor &Y) = 0;
+  virtual void backward(const Tensor &Y, Tensor &X) = 0;
 
-  virtual std::span<Parameter<T> *const> own_parameters() { return {}; }
+  virtual std::span<Parameter *const> own_parameters() { return {}; }
 
-  std::vector<Parameter<T> *> parameters() {
-    std::vector<Parameter<T> *> params;
+  // Given an input shape, what shape does forward() produce?
+  // Default: same shape (correct for ReLU, and any elementwise op).
+  virtual Shape output_shape(const Shape &in) const { return in; }
+
+  // Given an output-gradient shape, what shape does backward() produce?
+  // Default: same shape
+  virtual Shape input_shape(const Shape &out) const { return out; }
+
+  std::vector<Parameter *> parameters() {
+    std::vector<Parameter *> params;
 
     for (auto *p : own_parameters())
       params.push_back(p);
@@ -55,9 +61,9 @@ public:
 protected:
   // Child module registration
   // register_module(child) in your constructor for each child_module
-  void register_module(Module<T> &child) { m_Children.push_back(&child); }
+  void register_module(Module &child) { m_Children.push_back(&child); }
 
 private:
-  std::vector<Module<T> *> m_Children;
+  std::vector<Module *> m_Children;
 };
 } // namespace ml::core

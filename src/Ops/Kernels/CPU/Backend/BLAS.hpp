@@ -1,22 +1,8 @@
 #pragma once
 
-#include "Core/MatrixView.hpp"
-#include "Core/Tensor.hpp"
-#include "Core/VectorView.hpp"
-
 #include <cblas.h>
 
-namespace ml::linalg {
-using core::MatrixView;
-using core::Tensor;
-using core::VectorView;
-
-enum class Transpose { No = 0, Yes };
-enum class Triangular { Upper = 0, Lower };
-enum class Side { Left = 0, Right };
-enum class Diagonal { NonUnit = 0, Unit };
-
-namespace detail {
+namespace ml::kernels::detail {
 template <class T> struct BlasDispatch;
 
 template <> struct BlasDispatch<float> {
@@ -50,5 +36,4 @@ template <> struct BlasDispatch<double> {
   static constexpr auto gemm = cblas_dgemm;
 };
 
-} // namespace detail
-} // namespace ml::linalg
+} // namespace ml::kernels::detail

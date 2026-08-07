@@ -1,21 +1,23 @@
 #pragma once
 
-#include "Math/relu.hpp"
 #include "Module.hpp"
+#include "Ops/ReLU.hpp"
 
 namespace ml::core {
-template <class T> class ReLU final : public Module<T> {
+class ReLU final : public Module {
 public:
-  Tensor<T> forward(const Tensor<T> &input) override {
-    m_Input = input;
-    return ops::relu(input);
+  // input-output same shape
+  void forward(const Tensor &X, Tensor &Y) override {
+    m_Input = X;
+    ops::relu(X, Y);
   }
 
-  Tensor<T> backward(const Tensor<T> &grad_out) override {
-    return ops::relu_backward(grad_out, m_Input);
+  // input-output same shape
+  void backward(const Tensor &Y, Tensor &X) override {
+    ops::relu_backward(Y, m_Input, X);
   }
 
 private:
-  Tensor<T> m_Input;
+  Tensor m_Input;
 };
 } // namespace ml::core

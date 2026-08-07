@@ -1,6 +1,8 @@
 import os
-import tensorflow_datasets as tfds
+from typing import cast
+
 import numpy as np
+import tensorflow_datasets as tfds
 
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -18,7 +20,9 @@ def ds_to_numpy(ds):
 
 print("Downloading and processing MNIST dataset...")
 
-train_ds, test_ds = tfds.load("mnist", split=["train", "test"], as_supervised=True)
+train_ds, test_ds = cast(
+    tuple, tfds.load("mnist", split=["train", "test"], as_supervised=True)
+)
 
 train_images, train_labels = ds_to_numpy(train_ds)
 test_images, test_labels = ds_to_numpy(test_ds)
