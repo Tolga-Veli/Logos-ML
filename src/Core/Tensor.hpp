@@ -14,7 +14,7 @@ namespace ml::core {
 class Tensor {
 public:
   Tensor() = default;
-  explicit Tensor(const Shape &shape, DType type)
+  explicit Tensor(const Shape &shape, DType type = DType::Float32)
       : m_Impl(memory::CreateIntrusiveRef<TensorImpl>(shape, type)) {}
 
   Tensor(const Tensor &) = default;

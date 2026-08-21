@@ -30,6 +30,13 @@ template <class T> struct TensorView<T, 0> {
 
   [[nodiscard]] T &value() const noexcept { return *m_Data; }
 
+  T &operator=(T value) noexcept
+    requires(!std::is_const_v<T>)
+  {
+    *m_Data = value;
+    return *m_Data;
+  }
+
 private:
   T *m_Data;
 };

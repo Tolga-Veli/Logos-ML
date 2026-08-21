@@ -8,7 +8,7 @@ namespace ml::core {
 enum class DType : std::uint8_t {
   Float32,
   Float64,
-  Int32,
+  Int32, // # FIX: doesn't support any operations yet (can just store data)
 };
 
 template <class T> constexpr DType dtype_of();

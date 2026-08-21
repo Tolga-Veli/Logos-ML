@@ -13,6 +13,7 @@ public:
       T weight_decay = T{0})
       : m_Params(std::move(params)), m_LearningRate(learning_rate),
         m_Momentum(momentum), m_WeightDecay(weight_decay) {
+
     if (m_Momentum > T{0}) {
       m_Velocity.reserve(m_Params.size());
       for (auto *p : m_Params) {

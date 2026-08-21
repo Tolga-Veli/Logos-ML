@@ -1,6 +1,9 @@
 #pragma once
 
+#ifndef BLAS_BACKEND
 #include "Ops/Kernels/CPU/Backend/BLAS.hpp"
+#endif
+
 #include "Ops/Utils.hpp"
 #include "Ops/Views/MatrixView.hpp"
 #include "Ops/Views/ScalarView.hpp"

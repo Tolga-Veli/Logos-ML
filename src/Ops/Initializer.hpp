@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Core/DType.hpp"
 #include "Core/Tensor.hpp"
+#include "Memory/Device.hpp"
+#include "Ops/Kernels/Dispatch.hpp"
 
 #include <cmath>
 #include <random>
@@ -24,16 +25,12 @@ template <class T> inline void xavier_uniform_impl(Tensor &data) {
 } // namespace detail
 
 inline void xavier_uniform(Tensor &data) {
-  using enum core::DType;
-  switch (data.dtype()) {
-  case Float32:
-    detail::xavier_uniform_impl<float>(data);
-    break;
-  case Float64:
-    detail::xavier_uniform_impl<double>(data);
-    break;
-  default:
-    CORE_ASSERT(false, "shouldn't be here");
-  };
+  kernels::dispatch(data.device(), data.dtype(),
+                    [&]<memory::DeviceType D, class T>() {
+                      if constexpr (D == memory::DeviceType::CPU)
+                        detail::xavier_uniform_impl<T>(data);
+                      else
+                        CORE_ASSERT(false, "unreachable");
+                    });
 }
 } // namespace ml::ops::init

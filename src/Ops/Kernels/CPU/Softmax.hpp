@@ -1,33 +1,55 @@
 #pragma once
 
-#include "Core/Tensor.hpp"
+#include "Ops/Views/MatrixView.hpp"
 
 #include <algorithm>
 #include <cmath>
 
 namespace ml::kernels::cpu {
-using core::Tensor;
 
-template <class T> void softmax(const Tensor &input, Tensor &output) {
-  CORE_VERIFY(input.rank() == 2, "Invalid tensor argument");
+template <class T>
+inline void softmax(MatrixView<const T> input, MatrixView<T> output) {
+  const int batch = input.rows(), classes = input.cols();
 
-  const auto batch = input.shape()[0], classes = input.shape()[1];
+  const T *input_data = input.data();
+  T *output_data = output.data();
   for (int i = 0; i < batch; i++) {
-    const T *in = input.data<T>() + i * classes;
-    T *out = output.data<T>() + i * classes;
+    const int offset = i * classes;
+
+    const T *in = input_data + offset;
+    T *out = output_data + offset;
+
+    // Find the maximum logit:
+    //
+    // max = max(x_0, ..., x_{C-1})
+    //
+    // Subtracting it before exp() prevents large positive logits from
+    // overflowing
 
     const T maxv = *std::max_element(in, in + classes);
+
     T sum{0};
 
+    // exp(x_j - max)
     for (int j = 0; j < classes; j++) {
-      out[j] = std::exp(in[j] - maxv);
-      sum += out[j];
+      const T value = std::exp(in[j] - maxv);
+
+      CORE_ASSERT(std::isfinite(value), "Produced a non-finite value");
+
+      out[j] = value;
+      sum += value;
     }
 
-    CORE_VERIFY(sum > T{0}, "Trying to divide by 0");
+    CORE_ASSERT(std::isfinite(sum) && sum > T{0},
+                "Normalization sum must be finite and positive");
 
+    // Normalize:
+    //
+    // P_j = exp(x_j - max) / sum
+
+    const T inv_sum = T{1} / sum;
     for (int j = 0; j < classes; j++)
-      out[j] /= sum;
+      out[j] *= inv_sum;
   }
 }
 } // namespace ml::kernels::cpu

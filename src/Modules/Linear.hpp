@@ -2,7 +2,7 @@
 
 #include "Core/DType.hpp"
 #include "Module.hpp"
-#include "Modules/Init.hpp"
+#include "Ops/Initializer.hpp"
 #include "Parameter.hpp"
 
 #include "Ops/LinearAlgebra.hpp"

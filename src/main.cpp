@@ -1,6 +1,8 @@
 #include "Core/DType.hpp"
+#include "Core/Shape.hpp"
 #include "Core/Tensor.hpp"
 #include "Data/DataLoader.hpp"
+#include "Memory/MemoryStats.hpp"
 #include "Modules/Linear.hpp"
 #include "Modules/ReLU.hpp"
 #include "Modules/Sequential.hpp"
@@ -8,6 +10,7 @@
 #include "Optimizer/SGD.hpp"
 
 #include <chrono>
+#include <cmath>
 #include <print>
 
 // renders a single image from a (N, 784) tensor to the terminal
@@ -35,71 +38,51 @@ inline void render_image(const ml::core::Tensor &images, int index, int label,
                  predicted == label ? "✓" : "✗");
 }
 
-int cnt = 0;
+std::pair<float, float> eval(ml::core::Sequential &model,
+                             ml::optim::SGD<float> &optimizer,
+                             ml::data::DataLoader &loader, bool test) {
 
-void *operator new(std::size_t size) {
-  cnt++;
-  if (void *ptr = std::malloc(size))
-    return ptr;
-
-  throw std::bad_alloc{};
-}
-
-void operator delete(void *ptr) noexcept { std::free(ptr); }
-
-void *operator new[](std::size_t size) {
-  cnt++;
-  if (void *ptr = std::malloc(size))
-    return ptr;
-
-  throw std::bad_alloc{};
-}
-
-void operator delete[](void *ptr) noexcept { std::free(ptr); }
-
-float eval(ml::core::Sequential &model, ml::optim::SGD<float> &optimizer,
-           ml::data::DataLoader &loader, bool train) {
   loader.reset();
-  cnt = 0;
-
   float total_loss = 0.0f;
-  int batches = 0;
+  int total_batches = 0, correct = 0;
 
   ml::data::Batch batch;
+  if (!loader.next(batch))
+    return {0.0f, 0.0f};
+
+  ml::core::Tensor logits(model.output_shape(batch.images.shape())),
+      probs(logits.shape(), logits.dtype()), grad(probs.shape(), probs.dtype()),
+      X, loss(ml::core::Shape{});
+
   while (loader.next(batch)) {
-    ml::core::Tensor logits;
     model.forward(batch.images, logits);
+    ml::ops::cross_entropy(logits, batch.labels, probs, loss);
 
-    ml::core::Tensor probs(logits.shape(), logits.dtype());
-    auto loss = ml::ops::cross_entropy<float>(logits, batch.labels, probs);
+    float loss_value = *loss.data<float>();
 
-    if (train) {
-      batches++;
-      total_loss += loss;
+    int batch_size = batch.images.shape()[0];
+    total_loss += loss_value * static_cast<float>(batch_size);
+    total_batches += batch_size;
 
-      optimizer.zero_grad();
+    const float *prob_ptr = probs.data<float>();
+    const int *labels = batch.labels.data<int>();
+    for (int i = 0; i < batch.images.shape()[0]; i++) {
+      const float *ptr = prob_ptr + i * 10;
 
-      ml::core::Tensor grad(probs.shape(), probs.dtype());
-      ml::ops::cross_entropy_backward<float>(probs, batch.labels, grad);
+      int pred = 0;
+      float best = ptr[0];
 
-      ml::core::Tensor X;
-      model.backward(grad, X);
-      optimizer.step();
-    } else {
-      for (int i = 0; i < batch.images.shape()[0]; i++) {
-        const float *ptr = probs.data<float>() + i * 10;
+      for (int j = 1; j < 10; j++)
+        if (ptr[j] > best) {
+          best = ptr[j];
+          pred = j;
+        }
 
-        int pred = 0;
-        float best = ptr[0];
+      if (pred == labels[i])
+        ++correct;
 
-        for (int j = 1; j < 10; j++)
-          if (ptr[j] > best) {
-            best = ptr[j];
-            pred = j;
-          }
-
-        int label = static_cast<int>(batch.labels.data<int>()[i]);
-        render_image(batch.images, i, label, pred);
+      if (test) {
+        render_image(batch.images, i, labels[i], pred);
 
         std::println("\nProbabilities:");
         for (int j = 0; j < 10; j++)
@@ -109,19 +92,25 @@ float eval(ml::core::Sequential &model, ml::optim::SGD<float> &optimizer,
         getchar();
       }
     }
+
+    optimizer.zero_grad();
+    ml::ops::cross_entropy_backward(probs, batch.labels, grad);
+    model.backward(grad, X);
+    optimizer.step();
   }
 
-  return total_loss / static_cast<float>(batches);
+  return {total_loss / static_cast<float>(total_batches),
+          static_cast<float>(correct) / static_cast<float>(total_batches)};
 }
 
 int main() {
   auto train_images =
-      ml::data::load_binary("data/train_images.bin", {60'000, 784});
+      ml::data::load_binary<float>("data/train_images.bin", {60'000, 784});
   auto train_labels =
       ml::data::load_binary<int>("data/train_labels.bin", {60'000});
 
   auto test_images =
-      ml::data::load_binary("data/test_images.bin", {10'000, 784});
+      ml::data::load_binary<float>("data/test_images.bin", {10'000, 784});
   auto test_labels =
       ml::data::load_binary<int>("data/test_labels.bin", {10'000});
 
@@ -144,17 +133,21 @@ int main() {
                                   WEIGHT_DECAY);
   ml::data::Batch batch;
   for (int epoch = 1; epoch <= EPOCHS; epoch++) {
+    auto start_alloc_cnt = ml::memory::get_stats().allocations;
     auto epochStart = std::chrono::steady_clock::now();
 
-    auto loss = eval(model, optimizer, train_loader, true);
+    auto [loss, acc] = eval(model, optimizer, train_loader, false);
 
-    auto epochEnd = std::chrono::steady_clock::now();
     auto epochMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                       epochEnd - epochStart)
+                       std::chrono::steady_clock::now() - epochStart)
                        .count();
-    std::println("Epoch {} loss {:.4f}", epoch, loss);
-    std::println("Allocations: {} | Time: {}ms\n", cnt, epochMs);
+    auto end_alloc_cnt = ml::memory::get_stats().allocations;
+
+    std::println("Epoch {:2} | Loss {:.4f} | Accuracy {:.4f}%", epoch, loss,
+                 acc * 100.0f);
+    std::println("Allocations: {:2} | Time: {:2}ms\n",
+                 end_alloc_cnt - start_alloc_cnt, epochMs);
   }
 
-  eval(model, optimizer, test_loader, false);
+  eval(model, optimizer, test_loader, true);
 }

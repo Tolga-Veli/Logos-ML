@@ -16,8 +16,8 @@ template <class T> void relu(const Tensor &x, Tensor &out) {
 
   const T *src = x.data<T>();
   T *dst = out.data<T>();
-  const auto n = x.num_elements();
 
+  const int n = x.num_elements();
   for (int i = 0; i < n; i++)
     dst[i] = std::max(src[i], T{0});
 }
@@ -34,8 +34,8 @@ void relu_backward(const Tensor &grad_out, const Tensor &x, Tensor &grad_in) {
 
   const T *g = grad_out.data<T>(), *src = x.data<T>();
   T *dst = grad_in.data<T>();
-  const auto n = x.num_elements();
 
+  const int n = x.num_elements();
   for (int i = 0; i < n; i++)
     dst[i] = src[i] > T{0} ? g[i] : T{0};
 }
