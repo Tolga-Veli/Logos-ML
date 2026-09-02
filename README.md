@@ -1,18 +1,18 @@
 # Logos-ML
-A small **C++23 neural-network framework built from scratch**, focused on explicit tensor storage, understandable numerical kernels, and an MNIST multilayer-perceptron example.
+A small **C++23 neural-network framework built from scratch**, implementing an MNIST multilayer-perceptron example.
 
 
 ## Overview
-Logos-ML explores the internal mechanics of machine learning systems by implementing core components manually:
+Logos-ML implements core machine learning concepts from scratch:
 
 - reference-counted tensor storage
 - shapes, strides, and typed tensor handles
 - CPU kernels backed by BLAS where appropriate
-- neural-network modules and manually implemented backpropagation
+- neural-network modules and manually implemented backpropagation (doesn't support residual connections)
 - loss functions, optimization, batching, and training
 
 The project does not depend on an external machine-learning framework. It does
-use a system BLAS implementation for matrix and vector operations.
+use BLAS for fast matrix and vector operations.
 
 
 ## Features
@@ -55,9 +55,9 @@ High-level components:
 - `src/Ops` — public operations, views, dispatch, and CPU kernels
 - `src/Modules` — parameters, layers, and sequential composition
 - `src/Optimizer` — SGD
-- `src/Data` — binary loading and mini-batch iteration
+- `src/Data` — loading file data and mini-batch iteration
 - `src/main.cpp` — MNIST model, training loop, evaluation, and rendering
-- `tests` — numerical, backward-gradient, optimizer, tensor, and loader tests
+- `tests` — backward-gradient, optimizer, tensor, and loader tests
 
 
 
@@ -126,15 +126,13 @@ Then run the program:
 ```bash
 ./ml-project
 ```
-(Windows: `ml-project.exe`)
 
 
 ## Roadmap
 Planned changes:
-- SIMD-optimized kernels
 - Additional activation functions
 - More comprehensive tests, including randomized property tests
 - Adam and AdamW optimizers
 - Model serialization
-- Backend abstraction for hardware acceleration
 - Convolution layers
+- CUDA
