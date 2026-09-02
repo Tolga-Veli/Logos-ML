@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Assert.hpp"
+
 #include <initializer_list>
 #include <numeric>
 #include <vector>
@@ -8,8 +10,10 @@ namespace ml::core {
 class Shape {
 public:
   Shape() = default;
-  Shape(std::initializer_list<int> dims) noexcept : m_Dims(dims) {}
-  explicit Shape(std::vector<int> dims) noexcept : m_Dims(std::move(dims)) {}
+  Shape(std::initializer_list<int> dims) : m_Dims(dims) { VerifyDimensions(); }
+  explicit Shape(std::vector<int> dims) : m_Dims(std::move(dims)) {
+    VerifyDimensions();
+  }
 
   [[nodiscard]] int rank() const noexcept { return m_Dims.size(); }
 
@@ -39,6 +43,11 @@ public:
   }
 
 private:
+  void VerifyDimensions() const {
+    for (int dimension : m_Dims)
+      CORE_VERIFY(dimension >= 0, "Shape dimensions cannot be negative");
+  }
+
   std::vector<int> m_Dims;
 };
 } // namespace ml::core

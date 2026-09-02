@@ -33,7 +33,7 @@ namespace ml::ops {
  *   beta = 1  if overwrite == false
  *
  * @note If overwrite is true, the previous contents of 'out' are ignored.
- *       Otheriwse, the existing contents of 'out' are added to the result
+ *       Otherwise, the existing contents of 'out' are added to the result.
  *
  * @param transA Whether A should be transposed before multiplication.
  * @param transB Whether B should be transposed before multiplication.
@@ -46,11 +46,14 @@ namespace ml::ops {
 
 inline void matmul(Transpose transA, Transpose transB, bool overwrite,
                    const Tensor &A, const Tensor &B, Tensor &out) {
-  CORE_ASSERT(A.rank() == 2 && B.rank() == 2 && out.rank() == 2,
+  CORE_VERIFY(A.rank() == 2 && B.rank() == 2 && out.rank() == 2,
               "Requires matrices");
 
   CORE_VERIFY(A.dtype() == B.dtype() && A.dtype() == out.dtype(),
               "Requires all tensors to have the same dtype");
+
+  CORE_VERIFY(A.device() == B.device() && A.device() == out.device(),
+              "Requires all tensors to be on the same device");
 
   [[maybe_unused]] const int M = transA == Transpose::Yes ? A.shape()[1]
                                                           : A.shape()[0],
@@ -61,9 +64,9 @@ inline void matmul(Transpose transA, Transpose transB, bool overwrite,
                              N = transB == Transpose::Yes ? B.shape()[0]
                                                           : B.shape()[1];
 
-  CORE_ASSERT(K_A == K_B, "Matmul inner dimensions must match");
+  CORE_VERIFY(K_A == K_B, "Matmul inner dimensions must match");
 
-  CORE_ASSERT(out.shape()[0] == M && out.shape()[1] == N,
+  CORE_VERIFY(out.shape()[0] == M && out.shape()[1] == N,
               "Matmul output must have shape [M, N]");
 
   using kernels::MatrixView;

@@ -7,13 +7,14 @@
 
 #include "Ops/LinearAlgebra.hpp"
 #include "Ops/Matmul.hpp"
-#include <cmath>
+
+#include <array>
 
 namespace ml::core {
 
 class Linear final : public Module {
 public:
-  Linear(int in_sz, int out_sz, DType type)
+  Linear(int in_sz, int out_sz, DType type = DType::Float32)
       : m_Weight(Tensor(Shape{in_sz, out_sz}, type)),
         m_Bias(Tensor(Shape{out_sz}, type)) {
 

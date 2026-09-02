@@ -21,19 +21,26 @@ inline void cross_entropy(MatrixView<const T> logits,
   softmax(logits, probs);
 
   const int *labels_data = labels.data();
-  const T *prob_data = probs.data();
-
+  const T *logit_data = logits.data();
   T total{0};
   for (int i = 0; i < batch; i++) {
     const int label = labels_data[i];
 
-    CORE_ASSERT(label >= 0 && label < classes, "Label is outside class range");
+    CORE_VERIFY(label >= 0 && label < classes, "Label is outside class range");
 
-    const T prob = prob_data[i * classes + label];
-    total -= std::log(prob);
+    // Do not compute -log(softmax(logits)[label]) from `probs`: a valid
+    // probability can underflow to zero.  The equivalent log-sum-exp form
+    // stays finite after shifting by the row maximum.  See Blanchard,
+    // Higham & Higham (2021), doi.org/10.1093/imanum/draa038.
+    const T *row = logit_data + i * classes;
+    const T max_logit = *std::max_element(row, row + classes);
+    T exp_sum{0};
+    for (int j = 0; j < classes; ++j)
+      exp_sum += std::exp(row[j] - max_logit);
+    total += std::log(exp_sum) + max_logit - row[label];
   }
 
-  loss = total / static_cast<T>(batch);
+  loss.value() = total / static_cast<T>(batch);
 }
 
 template <class T>
@@ -50,7 +57,7 @@ inline void cross_entropy_backward(MatrixView<const T> probs,
   for (int i = 0; i < batch; i++) {
     const int offset = i * classes, label = labels_data[i];
 
-    CORE_ASSERT(label >= 0 && label < classes, "Label is outside class range");
+    CORE_VERIFY(label >= 0 && label < classes, "Label is outside class range");
 
     for (int j = 0; j < classes; j++)
       grad_data[offset + j] =

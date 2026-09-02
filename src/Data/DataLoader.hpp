@@ -5,9 +5,12 @@
 #include "Core/Shape.hpp"
 #include "Core/Tensor.hpp"
 
+#include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <numeric>
 #include <random>
 #include <vector>
 
@@ -37,12 +40,21 @@ class DataLoader {
 public:
   DataLoader(Tensor images, Tensor labels, int batch_size, bool shuffle = true)
       : m_Images(std::move(images)), m_Labels(std::move(labels)),
-        m_BatchSize(batch_size), m_Features(m_Images.shape()[1]),
-        m_Count(m_Images.shape()[0]), m_Shuffle(shuffle), m_Indices(m_Count),
+        m_BatchSize(batch_size), m_Shuffle(shuffle),
         m_Rng(std::random_device{}()) {
-    CORE_ASSERT(m_Labels.shape()[0] == m_Count, "images/labels count mismatch");
-    CORE_ASSERT(m_Images.is_contiguous() && m_Labels.is_contiguous(),
+
+    CORE_VERIFY(m_Images.rank() == 2 && m_Labels.rank() == 1,
+                "DataLoader expects images [N, features] and labels [N]");
+    CORE_VERIFY(m_BatchSize > 0, "batch_size must be positive");
+
+    m_Count = m_Images.shape()[0];
+    m_Features = m_Images.shape()[1];
+
+    CORE_VERIFY(m_Labels.shape()[0] == m_Count, "images/labels count mismatch");
+    CORE_VERIFY(m_Images.is_contiguous() && m_Labels.is_contiguous(),
                 "DataLoader requires contiguous input tensors");
+
+    m_Indices.resize(m_Count);
     std::iota(m_Indices.begin(), m_Indices.end(), 0);
   }
 
@@ -91,7 +103,7 @@ public:
 
 private:
   Tensor m_Images, m_Labels;
-  int m_BatchSize, m_Features, m_Count, m_Cursor = 0;
+  int m_BatchSize, m_Features = 0, m_Count = 0, m_Cursor = 0;
   bool m_Shuffle;
 
   std::vector<int> m_Indices;

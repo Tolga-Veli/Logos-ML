@@ -8,21 +8,12 @@
 #include <utility>
 
 namespace ml::core {
-enum class LogLevel : std::uint8_t {
-  Trace = 0,
-  Debug,
-  Info,
-  Warn,
-  Error,
-  Fatal
-};
+enum class LogLevel : std::uint8_t { Debug, Info, Warn, Error, Fatal };
 
 namespace detail {
 [[nodiscard]] constexpr std::string_view to_string(LogLevel level) noexcept {
   using enum LogLevel;
   switch (level) {
-  case Trace:
-    return "TRACE";
   case Debug:
     return "DEBUG";
   case Info:
@@ -32,6 +23,7 @@ namespace detail {
   case Error:
     return "ERROR";
   case Fatal:
+    return "FATAL";
   default:
     return "Unknown";
   }
@@ -46,8 +38,6 @@ namespace detail {
 to_ansi_color(LogLevel level) noexcept {
   using enum LogLevel;
   switch (level) {
-  case Trace:
-    return "\x1b[90m";
   case Debug:
     return "\x1b[36m";
   case Info:
@@ -101,10 +91,31 @@ public:
     std::fflush(stream);
   }
 
+  template <typename... Args>
+  void Log(LogLevel level, std::format_string<Args...> fmt, Args &&...args) {
+    if (level < m_minLevel)
+      return;
+
+    std::string message = std::format(fmt, std::forward<Args>(args)...);
+
+    std::scoped_lock lock(m_mutex);
+    FILE *stream = (level >= LogLevel::Warn) ? stderr : stdout;
+
+    if (m_colorEnabled) {
+      std::fprintf(stream, "%s[%s]%s %s\n", to_ansi_color(level).data(),
+                   to_string(level).data(), k_ColorReset.data(),
+                   message.c_str());
+    } else {
+      std::fprintf(stream, "[%s] %s\n", to_string(level).data(),
+                   message.c_str());
+    }
+    std::fflush(stream);
+  }
+
 private:
   Logger() = default;
 
-  LogLevel m_minLevel = LogLevel::Trace;
+  LogLevel m_minLevel = LogLevel::Debug;
   bool m_colorEnabled = true;
   std::mutex m_mutex;
 };
@@ -115,12 +126,13 @@ private:
 // every log line points at the code that actually logged it, not at some
 // wrapper function three layers down.
 #define LOG(level, ...)                                                        \
-  ::ml::core::Logger::Instance().Log(level, std::source_location::current(),   \
-                                     __VA_ARGS__)
+  ::ml::core::detail::Logger::Instance().Log(level, __VA_ARGS__)
 
-#define LOG_TRACE(...) LOG(::ml::core::LogLevel::Trace, __VA_ARGS__)
-#define LOG_DEBUG(...) LOG(::ml::core::LogLevel::Debug, __VA_ARGS__)
+#define LOG_SOURCE_LOC(level, ...)                                             \
+  ::ml::core::detail::Logger::Instance().Log(                                  \
+      level, std::source_location::current(), __VA_ARGS__)
+
+#define LOG_DEBUG(...) LOG_SOURCE_LOC(::ml::core::LogLevel::Debug, __VA_ARGS__)
 #define LOG_INFO(...) LOG(::ml::core::LogLevel::Info, __VA_ARGS__)
-#define LOG_WARN(...) LOG(::ml::core::LogLevel::Warn, __VA_ARGS__)
-#define LOG_ERROR(...) LOG(::ml::core::LogLevel::Error, __VA_ARGS__)
-#define LOG_FATAL(...) LOG(::ml::core::LogLevel::Fatal, __VA_ARGS__)
+#define LOG_WARN(...) LOG_SOURCE_LOC(::ml::core::LogLevel::Warn, __VA_ARGS__)
+#define LOG_ERROR(...) LOG_SOURCE_LOC(::ml::core::LogLevel::Error, __VA_ARGS__)

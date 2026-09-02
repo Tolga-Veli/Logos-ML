@@ -2,38 +2,30 @@
 
 #include "Core/Assert.hpp"
 #include "Core/Tensor.hpp"
-#include "Ops/Views/TensorView.hpp"
 
-#include <cstdlib>
+#include <cstddef>
 #include <type_traits>
 
 namespace ml {
 namespace kernels {
-using core::Tensor;
 
-// ---------------------------------------------------------------------
-// Rank-2 specialization: adds the row/col/ld interface your matmul
-// kernels want, and enforces row-major (unit inner stride) layout.
-// ---------------------------------------------------------------------
-template <class T> struct TensorView<T, 2> {
-  static constexpr std::size_t Rank = 2;
-
-  explicit TensorView(Tensor &tensor)
+template <class T> struct MatrixView {
+  explicit MatrixView(core::Tensor &tensor)
       : m_Data(tensor.data<T>()), m_Rows(tensor.shape()[0]),
         m_Cols(tensor.shape()[1]), m_LeadingDim(tensor.strides()[0]) {
-    CORE_VERIFY(tensor.rank() == 2, "TensorView<T,2>: tensor must be rank-2");
+    CORE_VERIFY(tensor.rank() == 2, "MatrixView<T,2>: tensor must be rank-2");
     CORE_VERIFY(tensor.strides()[1] == 1,
-                "TensorView<T,2>: tensor must be row-major");
+                "MatrixView<T,2>: tensor must be row-major");
   }
 
-  explicit TensorView(const Tensor &tensor)
+  explicit MatrixView(const core::Tensor &tensor)
     requires std::is_const_v<T>
       : m_Data(tensor.data<std::remove_const_t<T>>()),
         m_Rows(tensor.shape()[0]), m_Cols(tensor.shape()[1]),
         m_LeadingDim(tensor.strides()[0]) {
-    CORE_VERIFY(tensor.rank() == 2, "TensorView<T,2>: tensor must be rank-2");
+    CORE_VERIFY(tensor.rank() == 2, "MatrixView<T,2>: tensor must be rank-2");
     CORE_VERIFY(tensor.strides()[1] == 1,
-                "TensorView<T,2>: tensor must be row-major");
+                "MatrixView<T,2>: tensor must be row-major");
   }
 
   [[nodiscard]] T *data() noexcept { return m_Data; }
@@ -50,9 +42,6 @@ private:
   T *m_Data;
   int m_Rows, m_Cols, m_LeadingDim;
 };
-
-template <class T> using MatrixView = TensorView<T, 2>;
-
 } // namespace kernels
 
 namespace ops {

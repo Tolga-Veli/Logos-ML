@@ -5,8 +5,6 @@
 #include "Memory/IntrusiveRef.hpp"
 #include "TensorImpl.hpp"
 
-#include <cassert>
-
 namespace ml::core {
 
 // Tensor is a thin, cheaply-copyable handle around an intrusively refcounted
@@ -81,7 +79,7 @@ public:
     return Tensor(m_Impl->clone());
   }
 
-  // T(1,2,3,...) access
+  // Typed indexed access: tensor.operator()<float>(i, j, ...).
   template <class T, typename... Indices>
     requires(std::convertible_to<Indices, int> && ...)
   T &operator()(Indices... indices) {

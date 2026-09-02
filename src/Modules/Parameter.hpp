@@ -2,6 +2,9 @@
 
 #include "Core/Tensor.hpp"
 
+#include <optional>
+#include <utility>
+
 namespace ml::core {
 
 class Parameter {

@@ -5,10 +5,6 @@
 #include "Ops/Views/MatrixView.hpp"
 #include "Ops/Views/ScalarView.hpp"
 #include "Ops/Views/VectorView.hpp"
-#include "Softmax.hpp"
-
-#include <cmath>
-
 namespace ml::ops {
 
 /*
@@ -29,38 +25,45 @@ namespace ml::ops {
  * @param probs Probabilities with shape [B, C]
  * @param loss Mean loss as a scalar
  */
-inline void cross_entropy(const Tensor &logits, const Tensor &labels,
-                          Tensor &probs, Tensor &loss) {
-  CORE_ASSERT(logits.rank() == 2, "Requires logits with shape [B, C]");
+inline void cross_entropy(const core::Tensor &logits,
+                          const core::Tensor &labels, core::Tensor &probs,
+                          core::Tensor &loss) {
+  CORE_VERIFY(logits.rank() == 2, "Requires logits with shape [B, C]");
 
-  CORE_ASSERT(labels.rank() == 1, "Requires labels with shape [B]");
+  CORE_VERIFY(labels.rank() == 1, "Requires labels with shape [B]");
 
-  CORE_ASSERT(probs.rank() == 2, "Requires probabilities with shape [B, C]");
+  CORE_VERIFY(probs.rank() == 2, "Requires probabilities with shape [B, C]");
 
-  CORE_ASSERT(loss.rank() == 0, "Requires loss to be a scalar");
+  CORE_VERIFY(loss.rank() == 0, "Requires loss to be a scalar");
 
   [[maybe_unused]] const int batch = logits.shape()[0],
                              classes = logits.shape()[1];
 
-  CORE_ASSERT(labels.shape()[0] == batch, "Labels must have shape [B]");
+  CORE_VERIFY(batch > 0, "Requires a non-empty batch");
 
-  CORE_ASSERT(probs.shape()[0] == batch && probs.shape()[1] == classes,
+  CORE_VERIFY(classes > 0, "Requires at least one class");
+
+  CORE_VERIFY(labels.shape()[0] == batch, "Labels must have shape [B]");
+
+  CORE_VERIFY(probs.shape()[0] == batch && probs.shape()[1] == classes,
               "Probabilities must have shape [B, C]");
 
-  CORE_ASSERT(
+  CORE_VERIFY(
       logits.device() == probs.device() && logits.device() == loss.device() &&
           logits.device() == labels.device(),
       "Logits, labels, probabilities, and loss must be on the same device");
 
-  CORE_ASSERT(logits.dtype() == probs.dtype() && logits.dtype() == loss.dtype(),
+  CORE_VERIFY(logits.dtype() == probs.dtype() && logits.dtype() == loss.dtype(),
               "Logits, probabilities, and loss must have the same dtype");
 
-  CORE_ASSERT(labels.dtype() == core::DType::Int32,
+  CORE_VERIFY(labels.dtype() == core::DType::Int32,
               "Labels must have dtype int32");
+  CORE_VERIFY(logits.dtype() == core::DType::Float32 ||
+                  logits.dtype() == core::DType::Float64,
+              "Cross entropy requires floating-point logits");
 
   using kernels::MatrixView;
   using kernels::ScalarView;
-  using kernels::TensorView;
   using kernels::VectorView;
 
   kernels::dispatch(
@@ -70,7 +73,7 @@ inline void cross_entropy(const Tensor &logits, const Tensor &labels,
               MatrixView<const T>(logits), VectorView<const int>(labels),
               MatrixView<T>(probs), ScalarView<T>(loss));
         else {
-          CORE_ASSERT(false, "not implemented yet");
+          CORE_VERIFY(false, "not implemented yet");
         }
       });
 }
@@ -90,37 +93,41 @@ inline void cross_entropy(const Tensor &logits, const Tensor &labels,
  * @param labels Labels with shape [B].
  * @param grad Output gradient with shape [B, C].
  */
-inline void cross_entropy_backward(const Tensor &probs, const Tensor &labels,
-                                   Tensor &grad) {
-  CORE_ASSERT(probs.rank() == 2, "Requires probabilities with shape [B, C]");
+inline void cross_entropy_backward(const core::Tensor &probs,
+                                   const core::Tensor &labels,
+                                   core::Tensor &grad) {
+  CORE_VERIFY(probs.rank() == 2, "Requires probabilities with shape [B, C]");
 
-  CORE_ASSERT(labels.rank() == 1, "Requires labels with shape [B]");
+  CORE_VERIFY(labels.rank() == 1, "Requires labels with shape [B]");
 
-  CORE_ASSERT(grad.rank() == 2, "Requires gradient with shape [B, C]");
+  CORE_VERIFY(grad.rank() == 2, "Requires gradient with shape [B, C]");
 
   [[maybe_unused]] const int batch = probs.shape()[0],
                              classes = probs.shape()[1];
 
-  CORE_ASSERT(batch > 0, "Requires a non-empty batch");
+  CORE_VERIFY(batch > 0, "Requires a non-empty batch");
 
-  CORE_ASSERT(classes > 0, "Requires at least one class");
+  CORE_VERIFY(classes > 0, "Requires at least one class");
 
-  CORE_ASSERT(labels.shape()[0] == batch, "Labels must have shape [B]");
+  CORE_VERIFY(labels.shape()[0] == batch, "Labels must have shape [B]");
 
-  CORE_ASSERT(grad.shape()[0] == batch && grad.shape()[1] == classes,
+  CORE_VERIFY(grad.shape()[0] == batch && grad.shape()[1] == classes,
               "Gradient must have shape [B, C]");
 
-  CORE_ASSERT(probs.device() == labels.device() &&
+  CORE_VERIFY(probs.device() == labels.device() &&
                   probs.device() == grad.device(),
               "Probabilities, labels, and "
               "gradient must be on the same "
               "device");
 
-  CORE_ASSERT(probs.dtype() == grad.dtype(), "Probabilities and gradient "
+  CORE_VERIFY(probs.dtype() == grad.dtype(), "Probabilities and gradient "
                                              "must have the same dtype");
 
-  CORE_ASSERT(labels.dtype() == core::DType::Int32,
+  CORE_VERIFY(labels.dtype() == core::DType::Int32,
               "Labels must have dtype int32");
+  CORE_VERIFY(probs.dtype() == core::DType::Float32 ||
+                  probs.dtype() == core::DType::Float64,
+              "Cross entropy backward requires floating-point probabilities");
 
   kernels::dispatch(
       probs.device(), probs.dtype(), [&]<memory::DeviceType D, class T>() {
@@ -129,7 +136,7 @@ inline void cross_entropy_backward(const Tensor &probs, const Tensor &labels,
                                                VectorView<const int>(labels),
                                                MatrixView<T>(grad));
         } else {
-          CORE_ASSERT(false, "Cross entropy backward is "
+          CORE_VERIFY(false, "Cross entropy backward is "
                              "not implemented for this "
                              "device");
         }

@@ -8,7 +8,6 @@
 #include "Ops/Views/MatrixView.hpp"
 #include "Ops/Views/ScalarView.hpp"
 #include "Ops/Views/VectorView.hpp"
-#include <utility>
 
 namespace ml::kernels::cpu {
 using ops::Transpose;
@@ -91,7 +90,7 @@ template <class T> void asum(VectorView<const T> x, ScalarView<T> out) {
 // than silently degrading to plain dot().
 template <class T>
 void dot_precise(VectorView<const T>, VectorView<const T>, ScalarView<double>) {
-  std::unreachable();
+  CORE_VERIFY(false, "dot_precise only supports float input tensors");
 }
 
 template <>

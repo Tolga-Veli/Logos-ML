@@ -9,7 +9,9 @@
 namespace ml::kernels::cpu {
 using core::Tensor;
 
-// out[i] = max(x[i], 0)
+// out[i] = max(x[i], 0). Rectifiers avoid the positive-side saturation of
+// sigmoid/tanh units; see Nair & Hinton (2010):
+// www.cs.toronto.edu/~fritz/absps/reluICML.pdf
 // x and out must be same shape and x must be contiguous
 template <class T> void relu(const Tensor &x, Tensor &out) {
   CORE_VERIFY(x.is_contiguous(), "x must be contiguous");

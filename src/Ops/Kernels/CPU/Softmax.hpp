@@ -24,7 +24,9 @@ inline void softmax(MatrixView<const T> input, MatrixView<T> output) {
     // max = max(x_0, ..., x_{C-1})
     //
     // Subtracting it before exp() prevents large positive logits from
-    // overflowing
+    // overflowing without changing the result: softmax(x) = softmax(x-c).
+    // Numerical analysis: Blanchard, Higham & Higham (2021),
+    // doi.org/10.1093/imanum/draa038.
 
     const T maxv = *std::max_element(in, in + classes);
 

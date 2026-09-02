@@ -2,31 +2,25 @@
 
 #include "Core/Assert.hpp"
 #include "Core/Tensor.hpp"
-#include "TensorView.hpp"
 
-#include <cstdlib>
+#include <cstddef>
 #include <type_traits>
 
 namespace ml {
 namespace kernels {
-// ---------------------------------------------------------------------
-// Rank-1 specialization: VectorView - strided 1D view (dot, axpy, gemv).
-// ---------------------------------------------------------------------
-template <class T> struct TensorView<T, 1> {
-  using ElementType = T;
-  static constexpr std::size_t Rank = 1;
 
-  explicit TensorView(Tensor &tensor)
+template <class T> struct VectorView {
+  explicit VectorView(core::Tensor &tensor)
       : m_Data(tensor.data<T>()), m_Size(tensor.shape()[0]),
         m_Stride(tensor.strides()[0]) {
-    CORE_VERIFY(tensor.rank() == 1, "TensorView<T,1>: tensor must be rank-1");
+    CORE_VERIFY(tensor.rank() == 1, "VectorView<T,1>: tensor must be rank-1");
   }
 
-  explicit TensorView(const Tensor &tensor)
+  explicit VectorView(const core::Tensor &tensor)
     requires std::is_const_v<T>
       : m_Data(tensor.data<std::remove_const_t<T>>()),
         m_Size(tensor.shape()[0]), m_Stride(tensor.strides()[0]) {
-    CORE_VERIFY(tensor.rank() == 1, "TensorView<T,1>: tensor must be rank-1");
+    CORE_VERIFY(tensor.rank() == 1, "VectorView<T,1>: tensor must be rank-1");
   }
 
   [[nodiscard]] T *data() noexcept { return m_Data; }
@@ -47,8 +41,6 @@ private:
   T *m_Data;
   int m_Size, m_Stride;
 };
-
-template <class T> using VectorView = TensorView<T, 1>;
 
 } // namespace kernels
 

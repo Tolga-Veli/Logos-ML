@@ -2,13 +2,9 @@
 
 #include "Core/Tensor.hpp"
 #include "Kernels/CPU/Softmax.hpp"
-#include "Memory/Device.hpp"
 #include "Ops/Kernels/Dispatch.hpp"
 
-#include <cmath>
-
 namespace ml::ops {
-using core::Tensor;
 /*
  * @brief Computes the softmax function independently for each batch row
  *
@@ -23,21 +19,26 @@ using core::Tensor;
  * @note The implementation uses maximum-value subtraction before
  *       exponentiation for numerical stability.
  */
-inline void softmax(const Tensor &logits, Tensor &probs) {
-  CORE_ASSERT(logits.rank() == 2, "Requires logits with shape [B, C]");
-  CORE_ASSERT(probs.rank() == 2, "Requires probs with shape [B,C]");
+inline void softmax(const core::Tensor &logits, core::Tensor &probs) {
+  CORE_VERIFY(logits.rank() == 2, "Requires logits with shape [B, C]");
+  CORE_VERIFY(probs.rank() == 2, "Requires probs with shape [B,C]");
 
   [[maybe_unused]] const int batches = logits.shape()[0],
                              classes = logits.shape()[1];
 
-  CORE_ASSERT(probs.shape()[0] == batches && probs.shape()[1] == classes,
+  CORE_VERIFY(batches > 0 && classes > 0,
+              "Softmax requires a non-empty batch and class dimension");
+  CORE_VERIFY(probs.shape()[0] == batches && probs.shape()[1] == classes,
               "Probabilities must have shape [B, C]");
 
-  CORE_ASSERT(logits.device() == probs.device(),
+  CORE_VERIFY(logits.device() == probs.device(),
               "Logits and probabilities must be on the same device");
 
-  CORE_ASSERT(logits.dtype() == probs.dtype(),
+  CORE_VERIFY(logits.dtype() == probs.dtype(),
               "Logits and probabilities must have the same dtype");
+  CORE_VERIFY(logits.dtype() == core::DType::Float32 ||
+                  logits.dtype() == core::DType::Float64,
+              "Softmax requires floating-point tensors");
 
   kernels::dispatch(logits.device(), logits.dtype(),
                     [&]<memory::DeviceType D, class T>() {
@@ -45,7 +46,7 @@ inline void softmax(const Tensor &logits, Tensor &probs) {
                         kernels::cpu::softmax<T>(MatrixView<const T>(logits),
                                                  MatrixView<T>(probs));
                       else
-                        CORE_ASSERT(false, "not implemented yet");
+                        CORE_VERIFY(false, "not implemented yet");
                     });
 }
 } // namespace ml::ops

@@ -9,7 +9,6 @@
 #include "Strides.hpp"
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <span>
 #include <vector>
@@ -47,19 +46,23 @@ public:
   }
 
   template <class T> [[nodiscard]] T *data() noexcept {
-    CORE_ASSERT(dtype() == dtype_of<T>(),
+    CORE_VERIFY(dtype() == dtype_of<T>(),
                 "Requested data type does not match tensor dtype");
     return m_Storage->as<T>() + m_Offset;
   }
 
   template <class T> [[nodiscard]] const T *data() const noexcept {
-    CORE_ASSERT(dtype() == dtype_of<T>(),
+    CORE_VERIFY(dtype() == dtype_of<T>(),
                 "Requested data type does not match tensor dtype");
     return m_Storage->as<const T>() + m_Offset;
   }
 
-  std::byte *raw_data() noexcept { return m_Storage->data(); }
-  const std::byte *raw_data() const noexcept { return m_Storage->data(); }
+  std::byte *raw_data() noexcept {
+    return m_Storage->data() + m_Offset * dtype_size(m_Dtype);
+  }
+  const std::byte *raw_data() const noexcept {
+    return m_Storage->data() + m_Offset * dtype_size(m_Dtype);
+  }
 
   [[nodiscard]] std::size_t offset() const noexcept { return m_Offset; }
   [[nodiscard]] const Shape &shape() const noexcept { return m_Shape; }
@@ -72,7 +75,8 @@ public:
   [[nodiscard]] DType dtype() const noexcept { return m_Dtype; }
 
   template <class T> void fill(T value) {
-    CORE_ASSERT(dtype() == m_Dtype, "fill value dtype must match tensor dtype");
+    CORE_VERIFY(dtype() == dtype_of<T>(),
+                "fill value dtype must match tensor dtype");
     T *ptr = data<T>();
     if (is_contiguous()) {
       std::fill_n(ptr, num_elements(), value);
@@ -80,7 +84,7 @@ public:
     }
 
     if (rank() == 0) {
-      ptr[m_Offset] = value;
+      ptr[0] = value;
       return;
     }
 
@@ -90,7 +94,7 @@ public:
 
     std::vector<int> indices(rank() - 1, 0);
     for (int row{0}; row < numRows; row++) {
-      int offset = m_Offset;
+      int offset = 0;
       for (int dim{0}; dim < lastDim; dim++)
         offset += indices[dim] * m_Strides[dim];
 
@@ -117,18 +121,18 @@ public:
     return true;
   }
 
-  template <DType type, typename... Indices>
+  template <class T, typename... Indices>
     requires(std::convertible_to<Indices, int> && ...)
-  dtype_to_cpp_v<type> &operator()(Indices... indices) {
+  T &operator()(Indices... indices) {
     std::array<int, sizeof...(Indices)> idx{static_cast<int>(indices)...};
-    return data<type>()[ComputeStorageOffset(idx)];
+    return data<T>()[ComputeStorageOffset(idx)];
   }
 
-  template <DType type, typename... Indices>
+  template <class T, typename... Indices>
     requires(std::convertible_to<Indices, int> && ...)
-  const dtype_to_cpp_v<type> &operator()(Indices... indices) const {
+  const T &operator()(Indices... indices) const {
     std::array<int, sizeof...(Indices)> idx{static_cast<int>(indices)...};
-    return data<type>()[ComputeStorageOffset(idx)];
+    return data<T>()[ComputeStorageOffset(idx)];
   }
 
   // Deep copy: new contiguous storage, elements copied out of *this
@@ -154,12 +158,12 @@ private:
   DType m_Dtype;
 
   std::size_t ComputeStorageOffset(std::span<const int> indices) const {
-    CORE_ASSERT(static_cast<int>(indices.size()) == rank(),
+    CORE_VERIFY(static_cast<int>(indices.size()) == rank(),
                 "Indices count must equal to the rank");
 
     std::size_t offset{0};
     for (std::size_t i{0}; i < indices.size(); i++) {
-      CORE_ASSERT(indices[i] < m_Shape[i],
+      CORE_VERIFY(indices[i] >= 0 && indices[i] < m_Shape[i],
                   "Trying to index out of the bounds of the tensor");
       offset += indices[i] * m_Strides[i];
     }
