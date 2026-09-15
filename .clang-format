@@ -1,0 +1,49 @@
+BasedOnStyle: LLVM
+
+# Line width
+ColumnLimit: 120
+
+# Keep trivial functions/accessors on one line when they fit
+AllowShortFunctionsOnASingleLine: All
+AllowShortBlocksOnASingleLine: Always
+
+# Don't unnecessarily split attributes like [[nodiscard]]
+BreakAfterAttributes: Never
+
+# Function arguments / calls
+BinPackArguments: true
+BinPackParameters: true
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# Constructors
+PackConstructorInitializers: BinPack
+
+# Templates
+AlwaysBreakTemplateDeclarations: No
+
+# General C++ style
+IndentWidth: 2
+ContinuationIndentWidth: 4
+TabWidth: 2
+UseTab: Never
+
+AccessModifierOffset: -2
+IndentAccessModifiers: false
+
+BreakBeforeBraces: Attach
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Don't aggressively rewrite comments
+ReflowComments: false
+
+# Includes
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+
+# Modern C++
+Standard: Latest
+

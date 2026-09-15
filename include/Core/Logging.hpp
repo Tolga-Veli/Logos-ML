@@ -1,8 +1,7 @@
 #pragma once
 
-#include <cstdio>
 #include <format>
-#include <mutex>
+#include <print>
 #include <source_location>
 #include <string_view>
 #include <utility>
@@ -53,11 +52,9 @@ to_ansi_color(LogLevel level) noexcept {
   }
 }
 
-inline constexpr std::string_view k_ColorReset = "\x1b[0m";
-
-class Logger {
+class Logger final {
 public:
-  static Logger &Instance() noexcept {
+  [[nodiscard]] static Logger &GetInstance() noexcept {
     static Logger instance;
     return instance;
   }
@@ -66,58 +63,56 @@ public:
   [[nodiscard]] LogLevel MinLevel() const noexcept { return m_minLevel; }
 
   void SetColorEnabled(bool enabled) noexcept { m_colorEnabled = enabled; }
+  [[nodiscard]] bool ColorEnabled() const noexcept { return m_colorEnabled; }
 
   template <typename... Args>
   void Log(LogLevel level, std::source_location loc,
-           std::format_string<Args...> fmt, Args &&...args) {
+           std::format_string<Args...> format, Args &&...args) {
     if (level < m_minLevel)
       return;
 
-    std::string message = std::format(fmt, std::forward<Args>(args)...);
+    FILE *stream = StreamFor(level);
+    PrintPrefix(stream, level);
 
-    std::scoped_lock lock(m_mutex);
-    FILE *stream = (level >= LogLevel::Warn) ? stderr : stdout;
-
-    if (m_colorEnabled) {
-      std::fprintf(stream, "%s[%s]%s %s (%s:%d)\n", to_ansi_color(level).data(),
-                   to_string(level).data(), k_ColorReset.data(),
-                   message.c_str(), loc.file_name(),
-                   static_cast<int>(loc.line()));
-    } else {
-      std::fprintf(stream, "[%s] %s (%s:%d)\n", to_string(level).data(),
-                   message.c_str(), loc.file_name(),
-                   static_cast<int>(loc.line()));
-    }
+    std::print(stream, format, std::forward<Args>(args)...);
+    std::println(stream, " ({}:{})", loc.file_name(), loc.line());
     std::fflush(stream);
   }
 
   template <typename... Args>
-  void Log(LogLevel level, std::format_string<Args...> fmt, Args &&...args) {
+  void Log(LogLevel level, std::format_string<Args...> format, Args &&...args) {
     if (level < m_minLevel)
       return;
 
-    std::string message = std::format(fmt, std::forward<Args>(args)...);
-
-    std::scoped_lock lock(m_mutex);
-    FILE *stream = (level >= LogLevel::Warn) ? stderr : stdout;
-
-    if (m_colorEnabled) {
-      std::fprintf(stream, "%s[%s]%s %s\n", to_ansi_color(level).data(),
-                   to_string(level).data(), k_ColorReset.data(),
-                   message.c_str());
-    } else {
-      std::fprintf(stream, "[%s] %s\n", to_string(level).data(),
-                   message.c_str());
-    }
+    FILE *stream = StreamFor(level);
+    PrintPrefix(stream, level);
+    std::println(stream, format, std::forward<Args>(args)...);
     std::fflush(stream);
   }
 
 private:
+  static constexpr std::string_view k_ColorReset = "\x1b[0m";
+
   Logger() = default;
+  Logger(const Logger &) = delete;
+  Logger &operator=(const Logger &) = delete;
+
+  [[nodiscard]] static FILE *StreamFor(LogLevel level) noexcept {
+    return level >= LogLevel::Warn ? stderr : stdout;
+  }
+
+  void PrintPrefix(FILE *stream, LogLevel level) const {
+    if (m_colorEnabled) {
+      std::print(stream, "{}[{}]{} ", to_ansi_color(level), to_string(level),
+                 k_ColorReset);
+      return;
+    }
+
+    std::print(stream, "[{}] ", to_string(level));
+  }
 
   LogLevel m_minLevel = LogLevel::Debug;
   bool m_colorEnabled = true;
-  std::mutex m_mutex;
 };
 } // namespace detail
 } // namespace ml::core
@@ -126,10 +121,10 @@ private:
 // every log line points at the code that actually logged it, not at some
 // wrapper function three layers down.
 #define LOG(level, ...)                                                        \
-  ::ml::core::detail::Logger::Instance().Log(level, __VA_ARGS__)
+  ::ml::core::detail::Logger::GetInstance().Log(level, __VA_ARGS__)
 
 #define LOG_SOURCE_LOC(level, ...)                                             \
-  ::ml::core::detail::Logger::Instance().Log(                                  \
+  ::ml::core::detail::Logger::GetInstance().Log(                               \
       level, std::source_location::current(), __VA_ARGS__)
 
 #define LOG_DEBUG(...) LOG_SOURCE_LOC(::ml::core::LogLevel::Debug, __VA_ARGS__)

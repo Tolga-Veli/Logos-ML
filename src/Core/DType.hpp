@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Assert.hpp"
+#include "Core/Assert.hpp"
 
 #include <cstdint>
 
@@ -8,7 +8,7 @@ namespace ml::core {
 enum class DType : std::uint8_t {
   Float32,
   Float64,
-  Int32, // Storage/indexing only; numerical kernels currently require floats.
+  Int32,
 };
 
 template <class T> constexpr DType dtype_of();
@@ -44,6 +44,6 @@ constexpr std::size_t dtype_size(DType type) {
     return sizeof(int);
   }
 
-  CORE_VERIFY(false, "unreachable dtype");
+  UNREACHABLE("Unknown dtype");
 }
 } // namespace ml::core

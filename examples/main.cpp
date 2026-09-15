@@ -15,8 +15,7 @@
 #include <print>
 
 // renders a single image from a (N, 784) tensor to the terminal
-inline void render_image(const ml::core::Tensor &images, int index, int label,
-                         int pred = -1) {
+inline void render_image(const ml::core::Tensor &images, int index, int label, int pred = -1) {
 
   static const char *shades[] = {" ", "░", "▒", "▓", "█"};
   const float *img = images.data<float>() + index * 784;
@@ -35,12 +34,10 @@ inline void render_image(const ml::core::Tensor &images, int index, int label,
   if (pred == -1)
     std::println("Label: {}", label);
   else
-    std::println("Label: {}  Predicted: {}  {}", label, pred,
-                 pred == label ? "✓" : "✗");
+    std::println("Label: {}  Predicted: {}  {}", label, pred, pred == label ? "✓" : "✗");
 }
 
-std::pair<float, float> eval(ml::core::Sequential &model,
-                             ml::optim::SGD<float> &optimizer,
+std::pair<float, float> eval(ml::core::Sequential &model, ml::optim::SGD<float> &optimizer,
                              ml::data::DataLoader &loader, bool test) {
 
   loader.reset();
@@ -112,24 +109,18 @@ std::pair<float, float> eval(ml::core::Sequential &model,
 }
 
 int main() {
-  auto train_images =
-      ml::data::load_binary<float>("data/train_images.bin", {60'000, 784});
-  auto train_labels =
-      ml::data::load_binary<int>("data/train_labels.bin", {60'000});
+  auto train_images = ml::data::load_binary<float>("data/train_images.bin", {60'000, 784});
+  auto train_labels = ml::data::load_binary<int>("data/train_labels.bin", {60'000});
 
-  auto test_images =
-      ml::data::load_binary<float>("data/test_images.bin", {10'000, 784});
-  auto test_labels =
-      ml::data::load_binary<int>("data/test_labels.bin", {10'000});
+  auto test_images = ml::data::load_binary<float>("data/test_images.bin", {10'000, 784});
+  auto test_labels = ml::data::load_binary<int>("data/test_labels.bin", {10'000});
 
   constexpr int BATCH_SIZE = 32, EPOCHS = 10;
   constexpr float LEARNING_RATE = 0.01f, MOMENTUM = 0.0f, WEIGHT_DECAY = 0.0f;
   constexpr bool LOG = false;
 
-  ml::data::DataLoader train_loader(std::move(train_images),
-                                    std::move(train_labels), BATCH_SIZE, true);
-  ml::data::DataLoader test_loader(std::move(test_images),
-                                   std::move(test_labels), BATCH_SIZE, false);
+  ml::data::DataLoader train_loader(std::move(train_images), std::move(train_labels), BATCH_SIZE, true);
+  ml::data::DataLoader test_loader(std::move(test_images), std::move(test_labels), BATCH_SIZE, false);
 
   ml::core::Sequential model;
   model.add<ml::core::Linear>(784, 256);
@@ -138,8 +129,7 @@ int main() {
   model.add<ml::core::ReLU>();
   model.add<ml::core::Linear>(128, 10);
 
-  ml::optim::SGD<float> optimizer(model.parameters(), LEARNING_RATE, MOMENTUM,
-                                  WEIGHT_DECAY);
+  ml::optim::SGD<float> optimizer(model.parameters(), LEARNING_RATE, MOMENTUM, WEIGHT_DECAY);
   ml::data::Batch batch;
   for (int epoch = 1; epoch <= EPOCHS; epoch++) {
     ml::debug::ScopedAllocationCounter alloc(LOG);
@@ -147,8 +137,7 @@ int main() {
 
     auto [loss, acc] = eval(model, optimizer, train_loader, false);
 
-    LOG_INFO("Epoch {:2} | Loss {:.4f} | Accuracy {:.4f}%", epoch, loss,
-             acc * 100.0f);
+    LOG_INFO("Epoch {:2} | Loss {:.4f} | Accuracy {:.4f}%", epoch, loss, acc * 100.0f);
   }
 
   eval(model, optimizer, test_loader, true);
