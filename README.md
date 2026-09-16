@@ -1,5 +1,5 @@
 # Logos-ML
-A small **C++23 neural-network framework built from scratch**, implementing an MNIST multilayer-perceptron example.
+A small **C++23 machine library built from scratch**, implementing a multilayer-perceptron on the MNIST dataset.
 
 
 ## Overview
@@ -23,15 +23,13 @@ use BLAS for fast matrix and vector operations.
 - **ReLU** activation
 - Numerically stable **Softmax + Cross-Entropy** loss
 - Mini-batch **SGD**, with optional momentum and coupled L2 regularization
-- CTest-based numerical and gradient tests
-- **MNIST classification** example
+- **MNIST** example
 
 
 ## Abstractions
 The implementation is performance-conscious and minimal.
 
 ### Storage and Tensor
-
 - `Storage` owns a device allocation.
 - `TensorImpl` owns shape, stride, offset, dtype, and shared storage metadata.
 - `Tensor` is a cheaply copyable intrusive-reference-counted handle. Ordinary
@@ -39,7 +37,6 @@ The implementation is performance-conscious and minimal.
 - `MatrixView`, `VectorView`, and `ScalarView` adapt tensors to kernel APIs.
 
 ### Modules
-
 - `Module` provides forward/backward and parameter traversal interfaces.
 - `Sequential` composes modules.
 - `Linear` and `ReLU` retain the state required for their backward passes.
@@ -70,7 +67,7 @@ The included model trains a multilayer perceptron with:
 - Optimizer: **Gradient Descent** (mini-batch)
 - Loss: **Softmax + Cross-Entropy**
 
-Training, inference, and evaluation are implemented explicitly without high-level framework abstractions.
+Training, inference, and evaluation are implemented without high-level framework abstractions.
 
 
 ## Build
@@ -92,19 +89,8 @@ cmake --build build --config Release
 
 BLAS and a C++23-capable compiler are required.
 
-## Tests
-
-Tests are enabled by default through CTest:
-
-```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
-cmake --build build -j
-ctest --test-dir build --output-on-failure
-```
-
 ## MNIST Setup
-To run MNIST training, use the provided Python helper script to download and prepare the dataset.
-The Python script must be run in the same folder as the program executable.
+To run MNIST training, just build the project. CMake calls the python script included in the project and download the mnist dataset in folder data/ in build.
 
 ### Requirements
 - **Python** 3.9–3.12  
@@ -124,7 +110,7 @@ python help2.py
 
 Then run the program:
 ```bash
-./ml-project
+./ml-mnist-example
 ```
 
 
