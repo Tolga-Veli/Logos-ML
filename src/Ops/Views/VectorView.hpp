@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Core/Assert.hpp"
+#include "Core/Error.hpp"
 #include "Core/Tensor.hpp"
+
 #include "Utils.hpp"
 
 #include <cstddef>
@@ -16,7 +17,8 @@ public:
   VectorView(core::Tensor &tensor)
     requires(!std::is_const_v<T>)
   {
-    CORE_ASSERT(tensor.rank() == 1, "Tensor must be rank-1");
+    if (tensor.rank() != 1)
+      throw ShapeError("VectorView: Tensor must be rank one");
 
     m_Data = tensor.data<value_type>();
     m_Size = tensor.shape()[0];
@@ -26,7 +28,8 @@ public:
   VectorView(const core::Tensor &tensor)
     requires std::is_const_v<T>
   {
-    CORE_ASSERT(tensor.rank() == 1, "Tensor must be rank-1");
+    if (tensor.rank() != 1)
+      throw ShapeError("VectorView: Tensor must be rank one");
 
     m_Data = tensor.data<value_type>();
     m_Size = tensor.shape()[0];
@@ -49,7 +52,7 @@ public:
   [[nodiscard]] bool is_contiguous() const noexcept { return m_Size <= 1 || m_Stride == 1; }
 
   [[nodiscard]] T &operator[](std::size_t i) const noexcept {
-    CORE_ASSERT(i < m_Size, "Index out of bounds");
+    CORE_ASSERT(i < m_Size, "VectorView: Index out of bounds");
     return m_Data[i * m_Stride];
   }
 

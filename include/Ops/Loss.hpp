@@ -3,6 +3,7 @@
 #include "Core/Assert.hpp"
 #include "Ops/Backend/CPU/CrossEntropyLoss.hpp"
 #include "Ops/Backend/Dispatch.hpp"
+#include "Ops/Validation.hpp"
 #include "Ops/Views/Views.hpp"
 
 namespace ml::ops {
@@ -27,9 +28,8 @@ namespace ml::ops {
  */
 inline void cross_entropy(const core::Tensor &logits, const core::Tensor &labels, core::Tensor &probs,
                           core::Tensor &loss) {
-
-  CORE_VERIFY(logits.dtype() == probs.dtype() && logits.dtype() == loss.dtype(),
-              "Logits, probabilities, and loss must have the same dtype");
+  require_same_device(logits, labels, probs, loss);
+  require_same_dtype(logits, probs, loss);
 
   dispatch(logits.device(), logits.dtype(), [&]<memory::DeviceType D, class T>() {
     if constexpr (D == memory::DeviceType::CPU)
@@ -55,8 +55,8 @@ inline void cross_entropy(const core::Tensor &logits, const core::Tensor &labels
  * @param grad Output gradient with shape [B, C].
  */
 inline void cross_entropy_backward(const core::Tensor &probs, const core::Tensor &labels, core::Tensor &grad) {
-  CORE_VERIFY(probs.dtype() == grad.dtype(), "Probabilities and gradient "
-                                             "must have the same dtype");
+  require_same_device(probs, labels, grad);
+  require_same_dtype(probs, grad);
 
   dispatch(probs.device(), probs.dtype(), [&]<memory::DeviceType D, class T>() {
     if constexpr (D == memory::DeviceType::CPU)

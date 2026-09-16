@@ -2,7 +2,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <new>
+
+#include "Core/Assert.hpp"
 
 namespace ml::memory {
 enum class DeviceType : std::uint8_t { CPU };
@@ -13,9 +16,21 @@ public:
 
   [[nodiscard]] constexpr DeviceType type() const noexcept { return m_Type; }
 
+  bool operator<=>(const Device &) const noexcept = default;
+
 private:
   DeviceType m_Type;
 };
+
+[[nodiscard]] constexpr std::string_view to_string(Device device) {
+  switch (device.type()) {
+  case DeviceType::CPU:
+    return "CPU";
+  }
+
+  UNREACHABLE("Unknown device");
+  return "Unknown";
+}
 
 namespace detail {
 inline constexpr std::size_t DEFAULT_CPU_ALIGNMENT{64};
@@ -50,3 +65,11 @@ struct DeviceDeleter {
 };
 } // namespace detail
 } // namespace ml::memory
+
+namespace std {
+template <> struct formatter<ml::memory::Device, char> : formatter<string_view, char> {
+  template <class FormatContext> auto format(ml::memory::Device device, FormatContext &ctx) const {
+    return formatter<string_view, char>::format(ml::memory::to_string(device), ctx);
+  }
+};
+} // namespace std

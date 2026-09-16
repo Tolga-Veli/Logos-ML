@@ -23,7 +23,6 @@ template <class F> void dispatch_device(memory::Device device, F &&f) {
     std::forward<F>(f).template operator()<CPU>();
     return;
   }
-  UNREACHABLE();
 }
 
 template <class F> void dispatch_dtype(core::DType dtype, F &&f) {
@@ -36,11 +35,9 @@ template <class F> void dispatch_dtype(core::DType dtype, F &&f) {
   case Float64:
     std::forward<F>(f).template operator()<double>();
     return;
-  case Int32:
-    return;
+  default:
+    throw std::logic_error("Dispatching on non-floating point numbers is unsupported");
   }
-
-  UNREACHABLE();
 }
 } // namespace detail
 

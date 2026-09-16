@@ -48,7 +48,21 @@ template <> struct BaseTypeTraits<int> {
 
 template <class T> inline constexpr DType dtype_of_v = BaseTypeTraits<std::remove_cvref_t<T>>::dtype;
 
-constexpr std::size_t dtype_size(DType type) {
+[[nodiscard]] constexpr std::string_view to_string(DType dtype) noexcept {
+  switch (dtype) {
+  case DType::Float32:
+    return "Float32";
+  case DType::Float64:
+    return "Float64";
+  case DType::Int32:
+    return "Int32";
+  }
+
+  UNREACHABLE("Unknown dtype");
+  return "Unknown";
+}
+
+[[nodiscard]] constexpr std::size_t dtype_size(DType type) {
   using enum DType;
   switch (type) {
   case Float32:
@@ -60,6 +74,15 @@ constexpr std::size_t dtype_size(DType type) {
   }
 
   UNREACHABLE("Unknown dtype");
+  return 0;
 }
 
 } // namespace ml::core
+
+namespace std {
+template <> struct formatter<ml::core::DType, char> : formatter<string_view, char> {
+  template <class FormatContext> auto format(ml::core::DType dtype, FormatContext &ctx) const {
+    return formatter<string_view, char>::format(ml::core::to_string(dtype), ctx);
+  }
+};
+} // namespace std

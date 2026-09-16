@@ -8,7 +8,8 @@
 namespace ml::backend::cpu {
 
 template <class T> inline void softmax(MatrixView<const T> input, MatrixView<T> output) {
-  CORE_ASSERT(input.rows() == output.rows() && input.cols() == output.cols());
+  CORE_ASSERT(input.rows() == output.rows() && input.cols() == output.cols(), "Shape mismatch");
+  CORE_ASSERT(input.cols() > 0, "Requires at least one class");
 
   const std::size_t batch = input.rows(), classes = input.cols();
   for (std::size_t i = 0; i < batch; i++) {
@@ -19,8 +20,6 @@ template <class T> inline void softmax(MatrixView<const T> input, MatrixView<T> 
     T sum{0};
     for (std::size_t j = 0; j < classes; j++) {
       const T val = std::exp(input(i, j) - maxv);
-
-      CORE_ASSERT(std::isfinite(val), "Produced a non-finite value");
 
       output(i, j) = val;
       sum += val;

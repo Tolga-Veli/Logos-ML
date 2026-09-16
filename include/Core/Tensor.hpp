@@ -36,17 +36,16 @@ public:
   std::byte *raw_data() noexcept { return m_Impl->raw_data(); }
   const std::byte *raw_data() const noexcept { return m_Impl->raw_data(); }
 
-  // Typed indexed access: tensor.operator()<float>(i, j, ...).
   template <class T, typename... Indices>
-    requires(std::convertible_to<Indices, int> && ...)
-  T &operator()(Indices... indices) {
-    return m_Impl->template operator()<T>(indices...);
+    requires(std::convertible_to<Indices, std::size_t> && ...)
+  T &at(Indices... indices) {
+    return m_Impl->at<T>(indices...);
   }
 
   template <class T, typename... Indices>
-    requires(std::convertible_to<Indices, int> && ...)
-  const T &operator()(Indices... indices) const {
-    return m_Impl->template operator()<T>(indices...);
+    requires(std::convertible_to<Indices, std::size_t> && ...)
+  const T &at(Indices... indices) const {
+    return m_Impl->at<T>(indices...);
   }
 
 private:

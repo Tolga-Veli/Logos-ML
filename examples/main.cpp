@@ -13,17 +13,15 @@
 
 // renders a single image from a (N, 784) tensor to the terminal
 inline void render_image(const ml::core::Tensor &images, int index, int label, int pred = -1) {
-
   static const char *shades[] = {" ", "░", "▒", "▓", "█"};
-  const float *img = images.data<float>() + index * 784;
 
   std::println();
-  for (int r = 0; r < 28; ++r) {
-    for (int c = 0; c < 28; ++c) {
-      float px = img[r * 28 + c];
-      int shade = std::clamp(static_cast<int>(px * 4.99f), 0, 4);
-      std::print("{}{}", shades[shade],
-                 shades[shade]); // doubled for aspect ratio
+  for (int r = 0; r < 28; r++) {
+    for (int c = 0; c < 28; c++) {
+      const float px = images.at<float>(index, r * 28 + c);
+      const int shade = std::clamp(static_cast<int>(px * 4.99f), 0, 4);
+
+      std::print("{}{}", shades[shade], shades[shade]);
     }
     std::println();
   }
@@ -54,36 +52,36 @@ std::pair<float, float> eval(ml::core::Sequential &model, ml::optim::SGD<float> 
     model.forward(batch.images, logits);
     ml::ops::cross_entropy(logits, batch.labels, probs, loss);
 
-    float loss_value = *loss.data<float>();
+    const float loss_value = loss.at<float>();
 
     int batch_size = batch.images.shape()[0];
-    total_loss += loss_value * static_cast<float>(batch_size);
+    total_loss += loss_value * batch_size;
     total_batches += batch_size;
 
-    const float *prob_ptr = probs.data<float>();
-    const int *labels = batch.labels.data<int>();
     const int classes = probs.shape()[1];
-    for (int i = 0; i < batch.images.shape()[0]; i++) {
-      const float *ptr = prob_ptr + i * classes;
-
+    for (int i = 0; i < batch_size; i++) {
       int pred = 0;
-      float best = ptr[0];
+      float best = probs.at<float>(i, 0);
 
-      for (int j = 1; j < classes; j++)
-        if (ptr[j] > best) {
-          best = ptr[j];
+      for (int j = 1; j < classes; j++) {
+        const float prob = probs.at<float>(i, j);
+
+        if (prob > best) {
+          best = prob;
           pred = j;
         }
+      }
 
-      if (pred == labels[i])
+      const int label = batch.labels.at<int>(i);
+      if (pred == label)
         ++correct;
 
       if (test) {
-        render_image(batch.images, i, labels[i], pred);
+        render_image(batch.images, i, label, pred);
 
         std::println("\nProbabilities:");
         for (int j = 0; j < classes; j++)
-          std::println("{} : {:.2f}%%", j, ptr[j] * 100.0f);
+          std::println("{} : {:.2f}%%", j, probs.at<float>(i, j) * 100.0f);
 
         std::print("\nPress enter for next image...");
         getchar();
@@ -112,7 +110,7 @@ int main() {
   auto test_images = ml::core::load_binary<float>("data/test_images.bin", {10'000, 784});
   auto test_labels = ml::core::load_binary<int>("data/test_labels.bin", {10'000});
 
-  constexpr int BATCH_SIZE = 32, EPOCHS = 10;
+  constexpr std::size_t BATCH_SIZE = 32, EPOCHS = 10;
   constexpr float LEARNING_RATE = 0.01f, MOMENTUM = 0.0f, WEIGHT_DECAY = 0.0f;
 
   ml::core::DataLoader train_loader(std::move(train_images), std::move(train_labels), BATCH_SIZE, true);
@@ -127,9 +125,8 @@ int main() {
 
   ml::optim::SGD<float> optimizer(model.parameters(), LEARNING_RATE, MOMENTUM, WEIGHT_DECAY);
   ml::core::Batch batch;
-  for (int epoch = 1; epoch <= EPOCHS; epoch++) {
+  for (std::size_t epoch = 1; epoch <= EPOCHS; epoch++) {
     auto [loss, acc] = eval(model, optimizer, train_loader, false);
-
     LOG_INFO("Epoch {:2} | Loss {:.4f} | Accuracy {:.4f}%", epoch, loss, acc * 100.0f);
   }
 

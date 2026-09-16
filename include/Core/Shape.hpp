@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <initializer_list>
 #include <numeric>
 #include <vector>
@@ -30,4 +31,24 @@ public:
 private:
   std::vector<std::size_t> m_Dims;
 };
+
+[[nodiscard]] inline std::string to_string(const Shape &shape) {
+  std::string str = "Shape: [ ";
+  const auto &vec = shape.dims();
+  for (const auto &dim : vec)
+    str += std::to_string(dim) + ", ";
+
+  str.pop_back();
+  str.pop_back();
+  str += ']';
+  return str;
+}
 } // namespace ml::core
+
+namespace std {
+template <> struct formatter<ml::core::Shape, char> : formatter<string_view, char> {
+  template <class FormatContext> auto format(ml::core::Shape shape, FormatContext &ctx) const {
+    return formatter<string_view, char>::format(ml::core::to_string(shape), ctx);
+  }
+};
+} // namespace std

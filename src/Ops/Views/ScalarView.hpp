@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Core/Assert.hpp"
+#include "Core/Error.hpp"
 #include "Core/Tensor.hpp"
+
 #include "Utils.hpp"
 
 #include <type_traits>
@@ -14,14 +15,18 @@ public:
   ScalarView(core::Tensor &tensor)
     requires(!std::is_const_v<T>)
   {
-    CORE_ASSERT(tensor.rank() == 0, "Tensor must be rank-0");
+    if (tensor.rank() != 0)
+      throw ShapeError("ScalarView: Tensor must be rank zero");
+
     m_Data = tensor.data<value_type>();
   }
 
   ScalarView(const core::Tensor &tensor)
     requires std::is_const_v<T>
   {
-    CORE_ASSERT(tensor.rank() == 0, "Tensor must be rank-0");
+    if (tensor.rank() != 0)
+      throw ShapeError("ScalarView: Tensor must be rank zero");
+
     m_Data = tensor.data<value_type>();
   }
 

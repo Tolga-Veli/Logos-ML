@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Core/Tensor.hpp"
+
 #include "Ops/Backend/CPU/Softmax.hpp"
 #include "Ops/Backend/Dispatch.hpp"
+#include "Ops/Validation.hpp"
 
 namespace ml::ops {
 /*
@@ -20,11 +22,20 @@ namespace ml::ops {
  *       exponentiation for numerical stability.
  */
 inline void softmax(const core::Tensor &logits, core::Tensor &probs) {
+  require_same_dtype(logits, probs);
+  require_same_device(logits, probs);
+
   dispatch(logits.device(), logits.dtype(), [&]<memory::DeviceType D, class T>() {
     if constexpr (D == memory::DeviceType::CPU)
       backend::cpu::softmax<T>(logits, probs);
     else
       UNREACHABLE();
   });
+}
+
+inline core::Tensor softmax(const core::Tensor &logits) {
+  core::Tensor probs(logits.shape(), logits.dtype());
+  softmax(logits, probs);
+  return probs;
 }
 } // namespace ml::ops

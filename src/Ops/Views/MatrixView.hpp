@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Core/Assert.hpp"
+#include "Core/Error.hpp"
 #include "Core/Tensor.hpp"
+
 #include "Utils.hpp"
 
 #include <cstddef>
@@ -16,7 +17,8 @@ public:
   MatrixView(core::Tensor &tensor)
     requires(!std::is_const_v<T>)
   {
-    CORE_ASSERT(tensor.rank() == 2, "Tensor must be rank-2");
+    if (tensor.rank() != 2)
+      throw ShapeError("MatrixView: Tensor must be rank two");
 
     m_Data = tensor.data<value_type>();
     m_Rows = tensor.shape()[0];
@@ -28,7 +30,8 @@ public:
   MatrixView(const core::Tensor &tensor)
     requires std::is_const_v<T>
   {
-    CORE_VERIFY(tensor.rank() == 2, "Tensor must be rank-2");
+    if (tensor.rank() != 2)
+      throw ShapeError("MatrixView: Tensor must be rank two");
 
     m_Data = tensor.data<value_type>();
     m_Rows = tensor.shape()[0];
@@ -63,7 +66,7 @@ public:
   [[nodiscard]] bool is_contiguous() const noexcept { return is_row_major() || is_col_major(); }
 
   [[nodiscard]] T &operator()(std::size_t i, std::size_t j) const noexcept {
-    CORE_ASSERT(i < m_Rows && j < m_Cols, "Index out of bounds");
+    CORE_ASSERT(i < m_Rows && j < m_Cols, "MatrixView: Index out bounds");
     return m_Data[i * m_RowStride + j * m_ColStride];
   }
 

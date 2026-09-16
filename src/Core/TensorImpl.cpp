@@ -1,4 +1,5 @@
 #include "Core/TensorImpl.hpp"
+#include "Core/Error.hpp"
 
 namespace ml::core {
 
@@ -14,21 +15,28 @@ bool TensorImpl::is_contiguous() const noexcept {
   if (rank() == 0)
     return true;
 
-  std::size_t expected = 1;
+  std::size_t exp = 1;
   for (std::size_t dim = rank(); dim-- > 0;) {
-    if (m_Strides[dim] != expected)
+    if (m_Strides[dim] != exp)
       return false;
-    expected *= m_Shape[dim];
+
+    exp *= m_Shape[dim];
   }
   return true;
 }
 
 std::size_t TensorImpl::ComputeStorageOffset(std::span<const std::size_t> indices) const {
-  CORE_VERIFY(indices.size() == rank(), "Indices count must equal to the rank");
+  if (indices.size() != rank())
+    throw ShapeError("TensorImpl: indices count must equal to the rank");
 
-  std::size_t offset{0};
-  for (std::size_t i{0}; i < indices.size(); i++)
+  std::size_t offset = 0;
+  for (std::size_t i = 0; i < indices.size(); i++) {
+    if (indices[i] >= m_Shape[i])
+      throw std::out_of_range(
+          std::format("TensorImpl: index {} out of bounds for dim {} with size {}", indices[i], i, m_Shape[i]));
+
     offset += indices[i] * m_Strides[i];
+  }
 
   return offset;
 }
@@ -37,9 +45,6 @@ std::size_t TensorImpl::ComputeStorageOffset(std::span<const std::size_t> indice
 // multi-index and writes into dst's contiguous storage, row-major.
 // dst must already be shaped/allocated to match *this.
 void TensorImpl::CopyElementsInto(TensorImpl &dst) const {
-  if (num_elements() == 0)
-    return;
-
   const std::size_t elemSize = dtype_size(m_Dtype);
   auto *src = m_Storage->raw_data(), *dstData = dst.m_Storage->raw_data();
 
@@ -69,8 +74,9 @@ void TensorImpl::CopyElementsInto(TensorImpl &dst) const {
 }
 
 void TensorImpl::IncrementIndices(std::span<std::size_t> indices, const Shape &shape) {
-  for (std::size_t i = indices.size() - 1; i-- > 0;) {
+  for (std::size_t i = indices.size(); i-- > 0;) {
     indices[i]++;
+
     if (indices[i] < shape[i])
       return;
 

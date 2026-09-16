@@ -1,5 +1,9 @@
 #include "Modules/Linear.hpp"
 
+#include "Ops/Initializers/XavierUniform.hpp"
+#include "Ops/LinearAlgebra.hpp"
+#include "Ops/Matmul.hpp"
+
 namespace ml::core {
 
 Linear::Linear(std::size_t in_sz, std::size_t out_sz, DType type)

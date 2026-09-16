@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core/Assert.hpp"
 #include "Core/Tensor.hpp"
 #include "Utils.hpp"
 
@@ -16,7 +15,8 @@ public:
   ContiguousView(core::Tensor &tensor)
     requires(!std::is_const_v<T>)
   {
-    CORE_ASSERT(tensor.is_contiguous(), "Tensor must be contiguous");
+    if (!tensor.is_contiguous())
+      throw std::invalid_argument("ContiguousView: Tensor must be contiguous");
 
     m_Data = tensor.data<value_type>();
     m_Size = tensor.num_elements();
@@ -25,7 +25,8 @@ public:
   ContiguousView(const core::Tensor &tensor)
     requires std::is_const_v<T>
   {
-    CORE_ASSERT(tensor.is_contiguous(), "Tensor must be contiguous");
+    if (!tensor.is_contiguous())
+      throw std::invalid_argument("ContiguousView: Tensor must be contiguous");
 
     m_Data = tensor.data<value_type>();
     m_Size = tensor.num_elements();
@@ -40,7 +41,10 @@ public:
 
   [[nodiscard]] T *data() const noexcept { return m_Data; }
   [[nodiscard]] std::size_t size() const noexcept { return m_Size; }
-  [[nodiscard]] T &operator[](std::size_t i) const noexcept { return m_Data[i]; }
+  [[nodiscard]] T &operator[](std::size_t i) const noexcept {
+    CORE_ASSERT(i < m_Size, "ContiguousView: Index out of bounds");
+    return m_Data[i];
+  }
 
 private:
   T *m_Data{};

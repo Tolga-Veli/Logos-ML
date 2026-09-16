@@ -22,7 +22,7 @@ concept Index = std::integral<std::remove_cvref_t<T>> && (!std::same_as<std::rem
 
   Non-copyable, non-movable
 */
-class TensorImpl : public memory::detail::IntrusiveRefCounted {
+class TensorImpl final : public memory::detail::IntrusiveRefCounted {
 public:
   explicit TensorImpl(const Shape &shape, DType dtype);
 
@@ -50,8 +50,8 @@ public:
   template <class T> [[nodiscard]] T *data() noexcept { return m_Storage->data<T>() + m_Offset; }
   template <class T> [[nodiscard]] const T *data() const noexcept { return m_Storage->data<const T>() + m_Offset; }
 
-  template <class T, Index... Indices> T &operator()(Indices... indices);
-  template <class T, Index... Indices> const T &operator()(Indices... indices) const;
+  template <class T, Index... Indices> T &at(Indices... indices);
+  template <class T, Index... Indices> const T &at(Indices... indices) const;
 
   // Deep copy:
   template <class Self = TensorImpl> [[nodiscard]] memory::IntrusiveRef<Self> clone() const;
@@ -69,3 +69,5 @@ private:
   static void IncrementIndices(std::span<std::size_t> indices, const Shape &shape);
 };
 } // namespace ml::core
+
+#include "TensorImpl.inl"
