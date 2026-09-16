@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Core/DType.hpp"
+#include "Core/TensorImpl.hpp"
 #include "Memory/Device.hpp"
 #include "Memory/IntrusiveRef.hpp"
-#include "TensorImpl.hpp"
 
 namespace ml::core {
 
@@ -19,12 +19,11 @@ public:
   Tensor &operator=(const Tensor &) = default;
   Tensor(Tensor &&) noexcept = default;
   Tensor &operator=(Tensor &&) noexcept = default;
-  ~Tensor() = default;
 
   [[nodiscard]] bool is_contiguous() const noexcept { return m_Impl->is_contiguous(); }
-  [[nodiscard]] int rank() const noexcept { return m_Impl->rank(); }
-  [[nodiscard]] int num_elements() const noexcept { return m_Impl->num_elements(); }
-  [[nodiscard]] int offset() const noexcept { return m_Impl->offset(); }
+  [[nodiscard]] std::size_t rank() const noexcept { return m_Impl->rank(); }
+  [[nodiscard]] std::size_t num_elements() const noexcept { return m_Impl->num_elements(); }
+  [[nodiscard]] std::size_t offset() const noexcept { return m_Impl->offset(); }
   [[nodiscard]] DType dtype() const noexcept { return m_Impl->dtype(); }
   [[nodiscard]] memory::Device device() const noexcept { return m_Impl->device(); }
   [[nodiscard]] const Shape &shape() const noexcept { return m_Impl->shape(); }

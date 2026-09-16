@@ -2,7 +2,7 @@
 
 namespace ml::core {
 
-DataLoader::DataLoader(Tensor images, Tensor labels, int batch_size, bool shuffle = true)
+DataLoader::DataLoader(Tensor images, Tensor labels, std::size_t batch_size, bool shuffle)
     : m_Images(std::move(images)), m_Labels(std::move(labels)), m_BatchSize(batch_size), m_Shuffle(shuffle),
       m_Rng(std::random_device{}()) {
 
@@ -19,17 +19,12 @@ DataLoader::DataLoader(Tensor images, Tensor labels, int batch_size, bool shuffl
   std::iota(m_Indices.begin(), m_Indices.end(), 0);
 }
 
-int num_batches() const { return m_Count / m_BatchSize; }
-int count() const noexcept { return m_Count; }
-int batch_size() const noexcept { return m_BatchSize; }
-
 void DataLoader::reset() {
   if (m_Shuffle)
     std::shuffle(m_Indices.begin(), m_Indices.end(), m_Rng);
   m_Cursor = 0;
 }
 
-// Returns false when epoch is done
 bool DataLoader::next(Batch &out) {
   if (m_Cursor + m_BatchSize > m_Count)
     return false;
@@ -42,12 +37,11 @@ bool DataLoader::next(Batch &out) {
   std::byte *dstImg = batch_images.raw_data(), *dstLbl = batch_labels.raw_data();
   const std::byte *srcImg = m_Images.raw_data(), *srcLbl = m_Labels.raw_data();
 
-  for (int i = 0; i < m_BatchSize; ++i) {
+  for (std::size_t i = 0; i < m_BatchSize; ++i) {
     const int idx = m_Indices[m_Cursor + i];
-    std::memcpy(dstImg + static_cast<std::size_t>(i) * m_Features * imgElemSize,
-                srcImg + static_cast<std::size_t>(idx) * m_Features * imgElemSize, m_Features * imgElemSize);
-    std::memcpy(dstLbl + static_cast<std::size_t>(i) * labelElemSize,
-                srcLbl + static_cast<std::size_t>(idx) * labelElemSize, labelElemSize);
+    std::memcpy(dstImg + i * m_Features * imgElemSize, srcImg + idx * m_Features * imgElemSize,
+                m_Features * imgElemSize);
+    std::memcpy(dstLbl + i * labelElemSize, srcLbl + idx * labelElemSize, labelElemSize);
   }
 
   out = {std::move(batch_images), std::move(batch_labels)};

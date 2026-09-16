@@ -2,49 +2,73 @@
 
 #include "Core/Assert.hpp"
 #include "Core/Tensor.hpp"
+#include "Utils.hpp"
 
 #include <cstddef>
 #include <type_traits>
 
-namespace ml {
-namespace kernels {
+namespace ml::backend {
 
-template <class T> struct MatrixView {
-  explicit MatrixView(core::Tensor &tensor)
-      : m_Data(tensor.data<T>()), m_Rows(tensor.shape()[0]),
-        m_Cols(tensor.shape()[1]), m_LeadingDim(tensor.strides()[0]) {
-    CORE_VERIFY(tensor.rank() == 2, "MatrixView<T,2>: tensor must be rank-2");
-    CORE_VERIFY(tensor.strides()[1] == 1,
-                "MatrixView<T,2>: tensor must be row-major");
+template <ViewBaseType T> class MatrixView {
+public:
+  using value_type = std::remove_const_t<T>;
+
+  MatrixView(core::Tensor &tensor)
+    requires(!std::is_const_v<T>)
+  {
+    CORE_ASSERT(tensor.rank() == 2, "Tensor must be rank-2");
+
+    m_Data = tensor.data<value_type>();
+    m_Rows = tensor.shape()[0];
+    m_Cols = tensor.shape()[1];
+    m_RowStride = tensor.strides()[0];
+    m_ColStride = tensor.strides()[1];
   }
 
-  explicit MatrixView(const core::Tensor &tensor)
+  MatrixView(const core::Tensor &tensor)
     requires std::is_const_v<T>
-      : m_Data(tensor.data<std::remove_const_t<T>>()),
-        m_Rows(tensor.shape()[0]), m_Cols(tensor.shape()[1]),
-        m_LeadingDim(tensor.strides()[0]) {
-    CORE_VERIFY(tensor.rank() == 2, "MatrixView<T,2>: tensor must be rank-2");
-    CORE_VERIFY(tensor.strides()[1] == 1,
-                "MatrixView<T,2>: tensor must be row-major");
+  {
+    CORE_VERIFY(tensor.rank() == 2, "Tensor must be rank-2");
+
+    m_Data = tensor.data<value_type>();
+    m_Rows = tensor.shape()[0];
+    m_Cols = tensor.shape()[1];
+    m_RowStride = tensor.strides()[0];
+    m_ColStride = tensor.strides()[1];
   }
 
-  [[nodiscard]] T *data() noexcept { return m_Data; }
-  [[nodiscard]] const T *data() const noexcept { return m_Data; }
-  [[nodiscard]] int rows() const noexcept { return m_Rows; }
-  [[nodiscard]] int cols() const noexcept { return m_Cols; }
-  [[nodiscard]] int ld() const noexcept { return m_LeadingDim; }
+  MatrixView(core::Tensor &&) = delete;
+  MatrixView(const core::Tensor &&) = delete;
+
+  template <ViewBaseType U>
+    requires(std::is_const_v<T> && std::is_same_v<U, value_type>)
+  MatrixView(const MatrixView<U> &other) noexcept
+      : m_Data(other.data()), m_Rows(other.rows()), m_Cols(other.cols()), m_RowStride(other.row_stride()),
+        m_ColStride(other.col_stride()) {}
+
+  [[nodiscard]] T *data() const noexcept { return m_Data; }
+
+  [[nodiscard]] std::size_t rows() const noexcept { return m_Rows; }
+  [[nodiscard]] std::size_t cols() const noexcept { return m_Cols; }
+  [[nodiscard]] std::size_t row_stride() const noexcept { return m_RowStride; }
+  [[nodiscard]] std::size_t col_stride() const noexcept { return m_ColStride; }
+
+  [[nodiscard]] bool is_row_major() const noexcept {
+    return ((m_Cols <= 1 || m_ColStride == 1) && (m_Rows <= 1 || m_RowStride == m_Cols));
+  }
+  [[nodiscard]] bool is_col_major() const noexcept {
+    return ((m_Rows <= 1 || m_RowStride == 1) && (m_Cols <= 1 || m_ColStride == m_Rows));
+  }
+
+  [[nodiscard]] bool is_contiguous() const noexcept { return is_row_major() || is_col_major(); }
 
   [[nodiscard]] T &operator()(std::size_t i, std::size_t j) const noexcept {
-    return m_Data[i * static_cast<std::size_t>(m_LeadingDim) + j];
+    CORE_ASSERT(i < m_Rows && j < m_Cols, "Index out of bounds");
+    return m_Data[i * m_RowStride + j * m_ColStride];
   }
 
 private:
-  T *m_Data;
-  int m_Rows, m_Cols, m_LeadingDim;
+  T *m_Data{};
+  std::size_t m_Rows{}, m_Cols{}, m_RowStride{}, m_ColStride{};
 };
-} // namespace kernels
-
-namespace ops {
-using kernels::MatrixView;
-}
-} // namespace ml
+} // namespace ml::backend

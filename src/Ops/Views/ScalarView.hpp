@@ -2,37 +2,40 @@
 
 #include "Core/Assert.hpp"
 #include "Core/Tensor.hpp"
+#include "Utils.hpp"
 
 #include <type_traits>
 
-namespace ml {
-namespace kernels {
-template <class T> struct ScalarView {
-  explicit ScalarView(core::Tensor &tensor) : m_Data(tensor.data<T>()) {
-    CORE_VERIFY(tensor.rank() == 0, "ScalarView: tensor must be rank-0");
-  }
+namespace ml::backend {
+template <ViewBaseType T> class ScalarView {
+public:
+  using value_type = std::remove_const_t<T>;
 
-  explicit ScalarView(const core::Tensor &tensor)
-    requires std::is_const_v<T>
-      : m_Data(tensor.data<std::remove_const_t<T>>()) {
-    CORE_VERIFY(tensor.rank() == 0, "ScalarView: tensor must be rank-0");
-  }
-
-  [[nodiscard]] T *data() noexcept { return m_Data; }
-  [[nodiscard]] const T *data() const noexcept { return m_Data; }
-
-  [[nodiscard]] T &value() noexcept
+  ScalarView(core::Tensor &tensor)
     requires(!std::is_const_v<T>)
   {
-    return *m_Data;
+    CORE_ASSERT(tensor.rank() == 0, "Tensor must be rank-0");
+    m_Data = tensor.data<value_type>();
   }
 
-private:
-  T *m_Data;
-};
-} // namespace kernels
+  ScalarView(const core::Tensor &tensor)
+    requires std::is_const_v<T>
+  {
+    CORE_ASSERT(tensor.rank() == 0, "Tensor must be rank-0");
+    m_Data = tensor.data<value_type>();
+  }
 
-namespace ops {
-using kernels::ScalarView;
-}
-} // namespace ml
+  ScalarView(core::Tensor &&) = delete;
+  ScalarView(const core::Tensor &&) = delete;
+
+  template <class U>
+    requires(std::is_const_v<T> && std::is_same_v<U, value_type>)
+  constexpr ScalarView(const ScalarView<U> &other) noexcept : m_Data(other.data()) {}
+
+  [[nodiscard]] constexpr T *data() const noexcept { return m_Data; }
+  [[nodiscard]] constexpr T &value() const noexcept { return *m_Data; }
+
+private:
+  T *m_Data{};
+};
+} // namespace ml::backend

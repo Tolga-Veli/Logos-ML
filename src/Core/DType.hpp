@@ -8,30 +8,45 @@ namespace ml::core {
 enum class DType : std::uint8_t {
   Float32,
   Float64,
+
   Int32,
 };
 
-template <class T> constexpr DType dtype_of();
-
-template <> constexpr DType dtype_of<float>() { return DType::Float32; }
-template <> constexpr DType dtype_of<double>() { return DType::Float64; }
-template <> constexpr DType dtype_of<int>() { return DType::Int32; }
-
-template <DType type> struct dtype_to_cpp;
-
-template <> struct dtype_to_cpp<DType::Float32> {
-  using type = float;
+template <DType> struct DTypeTraits {
+  static_assert("Undefined dtype traits");
 };
 
-template <> struct dtype_to_cpp<DType::Float64> {
-  using type = double;
+template <> struct DTypeTraits<DType::Float32> {
+  using base_type = float;
 };
 
-template <> struct dtype_to_cpp<DType::Int32> {
-  using type = int;
+template <> struct DTypeTraits<DType::Float64> {
+  using base_type = double;
 };
 
-template <DType type> using dtype_to_cpp_v = typename dtype_to_cpp<type>::type;
+template <> struct DTypeTraits<DType::Int32> {
+  using base_type = int;
+};
+
+template <DType D> using dtype_to_base_t = typename DTypeTraits<D>::base_type;
+
+template <class T> struct BaseTypeTraits {
+  static_assert("Undefined base type traits");
+};
+
+template <> struct BaseTypeTraits<float> {
+  static constexpr DType dtype = DType::Float32;
+};
+
+template <> struct BaseTypeTraits<double> {
+  static constexpr DType dtype = DType::Float64;
+};
+
+template <> struct BaseTypeTraits<int> {
+  static constexpr DType dtype = DType::Int32;
+};
+
+template <class T> inline constexpr DType dtype_of_v = BaseTypeTraits<std::remove_cvref_t<T>>::dtype;
 
 constexpr std::size_t dtype_size(DType type) {
   using enum DType;
@@ -46,4 +61,5 @@ constexpr std::size_t dtype_size(DType type) {
 
   UNREACHABLE("Unknown dtype");
 }
+
 } // namespace ml::core

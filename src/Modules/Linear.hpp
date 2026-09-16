@@ -2,9 +2,9 @@
 
 #include "Core/DType.hpp"
 #include "Module.hpp"
-#include "Ops/Initializer.hpp"
 #include "Parameter.hpp"
 
+#include "Ops/Intializers/
 #include "Ops/LinearAlgebra.hpp"
 #include "Ops/Matmul.hpp"
 
@@ -14,12 +14,11 @@ namespace ml::core {
 
 class Linear final : public Module {
 public:
-  Linear(int in_sz, int out_sz, DType type = DType::Float32)
-      : m_Weight(Tensor(Shape{in_sz, out_sz}, type)),
-        m_Bias(Tensor(Shape{out_sz}, type)) {
+  Linear(std::size_t in_sz, std::size_t out_sz, DType type = DType::Float32)
+      : m_Weight(Tensor(Shape{in_sz, out_sz}, type)), m_Bias(Tensor(Shape{out_sz}, type)) {
 
     ops::init::xavier_uniform(m_Weight.data);
-    m_Bias.data.fill_zero();
+    ops::fill_zeroes(m_Bias.data);
   }
 
   // X = input - [batch, in_sz]
@@ -36,8 +35,7 @@ public:
     if (Y.shape() != expected || Y.dtype() != X.dtype())
       Y = Tensor(expected, X.dtype());
 
-    ops::matmul(ops::Transpose::No, ops::Transpose::No, true, X, m_Weight.data,
-                Y);
+    ops::matmul(ops::Transpose::No, ops::Transpose::No, true, X, m_Weight.data, Y);
     ops::add_rowwise_vector(Y, m_Bias.data);
   }
 
@@ -64,23 +62,20 @@ public:
   // partial derivatives of the loss with respect to the output Y
 
   void backward(const Tensor &Y, Tensor &X) override {
-    const auto in_sz = m_Weight.data.shape()[0],
-               out_sz = m_Weight.data.shape()[1], batch = Y.shape()[0];
+    const auto in_sz = m_Weight.data.shape()[0], out_sz = m_Weight.data.shape()[1], batch = Y.shape()[0];
 
     Shape expected{batch, in_sz};
     if (X.shape() != expected || X.dtype() != Y.dtype())
       X = Tensor(expected, Y.dtype());
 
-    ops::matmul(ops::Transpose::No, ops::Transpose::Yes, true, Y, m_Weight.data,
-                X);
+    ops::matmul(ops::Transpose::No, ops::Transpose::Yes, true, Y, m_Weight.data, X);
 
     if (!m_Weight.has_grad()) {
       m_Weight.grad = Tensor({in_sz, out_sz}, Y.dtype());
       m_Weight.grad->fill_zero();
     }
 
-    ops::matmul(ops::Transpose::Yes, ops::Transpose::No, false, m_Input, Y,
-                *m_Weight.grad);
+    ops::matmul(ops::Transpose::Yes, ops::Transpose::No, false, m_Input, Y, *m_Weight.grad);
 
     if (!m_Bias.has_grad()) {
       m_Bias.grad = Tensor({out_sz}, Y.dtype());
@@ -93,14 +88,10 @@ public:
   std::span<Parameter *const> own_parameters() override { return m_Params; }
 
   // [batch, out_sz]
-  Shape output_shape(const Shape &in) const override {
-    return Shape{in[0], m_Weight.data.shape()[1]};
-  }
+  Shape output_shape(const Shape &in) const override { return Shape{in[0], m_Weight.data.shape()[1]}; }
 
   // [batch, in_sz]
-  Shape input_shape(const Shape &out) const override {
-    return Shape{out[0], m_Weight.data.shape()[0]};
-  }
+  Shape input_shape(const Shape &out) const override { return Shape{out[0], m_Weight.data.shape()[0]}; }
 
 private:
   Parameter m_Weight, m_Bias;

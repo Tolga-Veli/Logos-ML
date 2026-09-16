@@ -11,19 +11,16 @@ namespace ml::core::detail {
 // This is a hard-failure path, and if a future caller wants to
 // turn it into a throw instead of abort() (e.g. for a fuzzing harness), that
 // shouldn't require touching the macros.
-[[noreturn]] inline void AssertFail(std::string_view expr,
-                                    std::source_location loc,
+[[noreturn]] inline void AssertFail(std::string_view expr, std::source_location loc,
                                     std::string_view msg = "Invalid argument") {
-  Logger::GetInstance().Log(LogLevel::Fatal, loc, "Assertion failed: ({}) {}",
-                            expr, msg);
+  Logger::GetInstance().Log(LogLevel::Fatal, loc, "Assertion failed: ({}) {}", expr, msg);
   std::abort();
 }
 
 template <class... Args>
   requires(sizeof...(Args) > 0)
-[[noreturn]] inline void
-AssertFail(std::string_view expr, std::source_location loc,
-           std::format_string<Args...> format, Args &&...args) {
+[[noreturn]] inline void AssertFail(std::string_view expr, std::source_location loc, std::format_string<Args...> format,
+                                    Args &&...args) {
   AssertFail(expr, loc, std::format(format, std::forward<Args>(args)...));
 }
 
@@ -33,12 +30,11 @@ AssertFail(std::string_view expr, std::source_location loc,
 // be violated without immediately corrupting program state. If you're ever
 // tempted to disable this in release "for performance", that's a sign the
 // check belongs in CORE_ASSERT instead, not that VERIFY should be weaker.
-#define CORE_VERIFY(cond, ...)                                                 \
-  do {                                                                         \
-    if (!(cond)) [[unlikely]] {                                                \
-      ::ml::core::detail::AssertFail(#cond, std::source_location::current()    \
-                                                __VA_OPT__(, ) __VA_ARGS__);   \
-    }                                                                          \
+#define CORE_VERIFY(cond, ...)                                                                                         \
+  do {                                                                                                                 \
+    if (!(cond)) [[unlikely]] {                                                                                        \
+      ::ml::core::detail::AssertFail(#cond, std::source_location::current() __VA_OPT__(, ) __VA_ARGS__);               \
+    }                                                                                                                  \
   } while (false)
 
 // Compiled out entirely in release - the condition itself is never
