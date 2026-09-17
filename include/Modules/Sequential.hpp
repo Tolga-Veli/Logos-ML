@@ -20,8 +20,8 @@ public:
     add(std::make_unique<ModuleType>(std::forward<Args>(args)...));
   }
 
-  void forward(const Tensor &X, Tensor &Y) override;
-  void backward(const Tensor &Y, Tensor &X) override;
+  Tensor forward(const Tensor &X) override;
+  Tensor backward(const Tensor &Y) override;
 
   [[nodiscard]] Shape output_shape(const Shape &in) const override;
   [[nodiscard]] Shape input_shape(const Shape &out) const override;

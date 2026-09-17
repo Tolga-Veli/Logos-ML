@@ -12,8 +12,8 @@ class Module {
 public:
   virtual ~Module() = default;
 
-  virtual void forward(const Tensor &X, Tensor &Y) = 0;
-  virtual void backward(const Tensor &Y, Tensor &X) = 0;
+  virtual Tensor forward(const Tensor &X) = 0;
+  virtual Tensor backward(const Tensor &Y) = 0;
 
   virtual std::span<Parameter *const> own_parameters() { return {}; }
 

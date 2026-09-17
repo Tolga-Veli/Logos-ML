@@ -12,15 +12,16 @@ Linear::Linear(std::size_t in_sz, std::size_t out_sz, DType type)
   ops::fill_zeroes(m_Bias.value());
 }
 
-void Linear::forward(const Tensor &X, Tensor &Y) {
+Tensor Linear::forward(const Tensor &X) {
   m_Input = X;
-  Y = ops::matmul(X, ops::Transpose::No, m_Weight.value(), ops::Transpose::No);
+  Tensor Y = ops::matmul(X, ops::Transpose::No, m_Weight.value(), ops::Transpose::No);
   ops::add_rowwise_vector(Y, m_Bias.value());
+  return Y;
 }
 
-void Linear::backward(const Tensor &Y, Tensor &X) {
+Tensor Linear::backward(const Tensor &Y) {
   const auto in_sz = m_Weight.value().shape()[0], out_sz = m_Weight.value().shape()[1];
-  X = ops::matmul(Y, ops::Transpose::No, m_Weight.value(), ops::Transpose::Yes);
+  Tensor X = ops::matmul(Y, ops::Transpose::No, m_Weight.value(), ops::Transpose::Yes);
 
   if (!m_Weight.has_grad()) {
     m_Weight.initialize_grad(Tensor{{in_sz, out_sz}, Y.dtype()});
@@ -35,5 +36,6 @@ void Linear::backward(const Tensor &Y, Tensor &X) {
   }
 
   ops::sum_rows(Y, m_Bias.grad());
+  return X;
 }
 } // namespace ml::core

@@ -18,7 +18,7 @@ public:
   // b = bias - [out_sz]
   //
   // Y = X * W + b
-  void forward(const Tensor &X, Tensor &Y) override;
+  Tensor forward(const Tensor &X) override;
 
   // X = input - [batch, in_sz]
   // W = weights - [in_sz, out_sz]
@@ -42,7 +42,7 @@ public:
   // the partial derivative of the loss w.r.t. the bias is just the sum of the
   // partial derivatives of the loss with respect to the output Y
 
-  void backward(const Tensor &Y, Tensor &X) override;
+  Tensor backward(const Tensor &Y) override;
 
   [[nodiscard]] std::span<Parameter *const> own_parameters() override { return m_Params; }
 

@@ -49,7 +49,7 @@ std::pair<float, float> eval(ml::core::Sequential &model, ml::optim::SGD<float> 
       loss = ml::core::Tensor(ml::core::Shape{});
     }
 
-    model.forward(batch.images, logits);
+    logits = model.forward(batch.images);
     ml::ops::cross_entropy(logits, batch.labels, probs, loss);
 
     const float loss_value = loss.at<float>();
@@ -91,7 +91,7 @@ std::pair<float, float> eval(ml::core::Sequential &model, ml::optim::SGD<float> 
     if (!test) {
       optimizer.zero_grad();
       ml::ops::cross_entropy_backward(probs, batch.labels, grad);
-      model.backward(grad, X);
+      X = model.backward(grad);
       optimizer.step();
     }
   }

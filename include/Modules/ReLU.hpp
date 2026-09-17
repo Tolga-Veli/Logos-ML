@@ -7,14 +7,18 @@ namespace ml::core {
 class ReLU final : public Module {
 public:
   // input-output same shape
-  void forward(const Tensor &X, Tensor &Y) override {
+  Tensor forward(const Tensor &X) override {
     m_Input = X;
+    Tensor Y(X.shape());
     ops::relu(X, Y);
+    return Y;
   }
 
   // input-output same shape
-  void backward(const Tensor &Y, Tensor &X) override {
+  Tensor backward(const Tensor &Y) override {
+    Tensor X(Y.shape());
     ops::relu_backward(Y, m_Input, X);
+    return X;
   }
 
 private:
