@@ -104,31 +104,34 @@ std::pair<float, float> eval(ml::core::Sequential &model, ml::optim::SGD<float> 
 }
 
 int main() {
-  auto train_images = ml::core::load_binary<float>("data/train_images.bin", {60'000, 784});
-  auto train_labels = ml::core::load_binary<int>("data/train_labels.bin", {60'000});
+  try {
+    auto train_images = ml::core::load_binary<float>("data/train_images.bin", {60'000, 784});
+    auto train_labels = ml::core::load_binary<int>("data/train_labels.bin", {60'000});
 
-  auto test_images = ml::core::load_binary<float>("data/test_images.bin", {10'000, 784});
-  auto test_labels = ml::core::load_binary<int>("data/test_labels.bin", {10'000});
+    auto test_images = ml::core::load_binary<float>("data/test_images.bin", {10'000, 784});
+    auto test_labels = ml::core::load_binary<int>("data/test_labels.bin", {10'000});
 
-  constexpr std::size_t BATCH_SIZE = 32, EPOCHS = 10;
-  constexpr float LEARNING_RATE = 0.01f, MOMENTUM = 0.0f, WEIGHT_DECAY = 0.0f;
+    constexpr std::size_t BATCH_SIZE = 32, EPOCHS = 10;
+    constexpr float LEARNING_RATE = 0.01f, MOMENTUM = 0.0f, WEIGHT_DECAY = 0.0f;
 
-  ml::core::DataLoader train_loader(std::move(train_images), std::move(train_labels), BATCH_SIZE, true);
-  ml::core::DataLoader test_loader(std::move(test_images), std::move(test_labels), BATCH_SIZE, false);
+    ml::core::DataLoader train_loader(std::move(train_images), std::move(train_labels), BATCH_SIZE, true);
+    ml::core::DataLoader test_loader(std::move(test_images), std::move(test_labels), BATCH_SIZE, false);
 
-  ml::core::Sequential model;
-  model.add<ml::core::Linear>(784, 256);
-  model.add<ml::core::ReLU>();
-  model.add<ml::core::Linear>(256, 128);
-  model.add<ml::core::ReLU>();
-  model.add<ml::core::Linear>(128, 10);
+    ml::core::Sequential model;
+    model.add<ml::core::Linear>(784, 256);
+    model.add<ml::core::ReLU>();
+    model.add<ml::core::Linear>(256, 128);
+    model.add<ml::core::ReLU>();
+    model.add<ml::core::Linear>(128, 10);
 
-  ml::optim::SGD<float> optimizer(model.parameters(), LEARNING_RATE, MOMENTUM, WEIGHT_DECAY);
-  ml::core::Batch batch;
-  for (std::size_t epoch = 1; epoch <= EPOCHS; epoch++) {
-    auto [loss, acc] = eval(model, optimizer, train_loader, false);
-    LOG_INFO("Epoch {:2} | Loss {:.4f} | Accuracy {:.4f}%", epoch, loss, acc * 100.0f);
+    ml::optim::SGD<float> optimizer(model.parameters(), LEARNING_RATE, MOMENTUM, WEIGHT_DECAY);
+    ml::core::Batch batch;
+    for (std::size_t epoch = 1; epoch <= EPOCHS; epoch++) {
+      auto [loss, acc] = eval(model, optimizer, train_loader, false);
+      LOG_INFO("Epoch {:2} | Loss {:.4f} | Accuracy {:.4f}%", epoch, loss, acc * 100.0f);
+    }
+    eval(model, optimizer, test_loader, true);
+  } catch (ml::Error &e) {
+    std::println("Loc: {} {} {}", e.location().file_name(), e.location().function_name(), e.location().line());
   }
-
-  eval(model, optimizer, test_loader, true);
 }

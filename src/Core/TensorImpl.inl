@@ -15,7 +15,7 @@ template <class T, Index... Indices> const T &TensorImpl::at(Indices... indices)
 
 // Deep copy:
 template <class Self> memory::IntrusiveRef<Self> TensorImpl::clone() const {
-  auto out = ml::memory::CreateIntrusiveRef<Self>(m_Shape, m_Dtype);
+  auto out = ml::memory::CreateIntrusiveRef<Self>(m_Shape, m_Dtype, m_Storage->device());
   CopyElementsInto(*out);
   return out;
 }

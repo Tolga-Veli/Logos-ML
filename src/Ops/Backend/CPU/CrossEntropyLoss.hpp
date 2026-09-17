@@ -54,7 +54,7 @@ inline void cross_entropy_backward(MatrixView<const T> probs, VectorView<const i
   for (std::size_t i = 0; i < batch; i++) {
     const auto label = labels[i];
 
-    CORE_VERIFY(label >= 0 && label < classes, "Label is outside class range");
+    CORE_ASSERT(label >= 0 && label < classes, "Label is outside class range");
 
     for (std::size_t j = 0; j < classes; j++)
       grad(i, j) = (probs(i, j) - (j == label ? T{1} : T{0})) * inv_batch;

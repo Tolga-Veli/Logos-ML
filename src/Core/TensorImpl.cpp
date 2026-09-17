@@ -3,9 +3,9 @@
 
 namespace ml::core {
 
-TensorImpl::TensorImpl(const Shape &shape, DType dtype)
-    : m_Storage(memory::CreateIntrusiveRef<memory::Storage>(shape.num_elements() * dtype_size(dtype))), m_Shape(shape),
-      m_Strides(Strides::Contiguous(shape)), m_Offset(0), m_Dtype(dtype) {}
+TensorImpl::TensorImpl(const Shape &shape, DType dtype, memory::Device device)
+    : m_Storage(memory::CreateIntrusiveRef<memory::Storage>(shape.num_elements() * dtype_size(dtype), device)),
+      m_Shape(shape), m_Strides(Strides::Contiguous(shape)), m_Offset(0), m_Dtype(dtype) {}
 
 TensorImpl::TensorImpl(memory::IntrusiveRef<memory::Storage> storage, const Shape &shape, const Strides &strides,
                        std::size_t offset, DType dtype) noexcept

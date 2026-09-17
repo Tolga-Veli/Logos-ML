@@ -12,8 +12,10 @@ namespace ml::core {
 class Tensor {
 public:
   Tensor() = default;
-  explicit Tensor(const Shape &shape, DType type = DType::Float32)
-      : m_Impl(memory::CreateIntrusiveRef<TensorImpl>(shape, type)) {}
+  ~Tensor() noexcept = default;
+
+  explicit Tensor(const Shape &shape, DType type = DType::Float32, memory::Device device = {})
+      : m_Impl(memory::CreateIntrusiveRef<TensorImpl>(shape, type, device)) {}
 
   Tensor(const Tensor &) = default;
   Tensor &operator=(const Tensor &) = default;
@@ -29,6 +31,9 @@ public:
   [[nodiscard]] const Shape &shape() const noexcept { return m_Impl->shape(); }
   [[nodiscard]] const Strides &strides() const noexcept { return m_Impl->strides(); }
   [[nodiscard]] Tensor clone() const { return Tensor(m_Impl->clone()); }
+  [[nodiscard]] Tensor as_strided(const Shape &shape, const Strides &strides, std::size_t offset = 0) const {
+    return Tensor(m_Impl->as_strided(shape, strides, offset));
+  }
 
   template <class T> [[nodiscard]] T *data() noexcept { return m_Impl->data<T>(); }
   template <class T> [[nodiscard]] const T *data() const noexcept { return m_Impl->data<T>(); }

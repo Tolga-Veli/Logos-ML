@@ -17,23 +17,41 @@ public:
 
   virtual std::span<Parameter *const> own_parameters() { return {}; }
 
-  // Given an input shape, what shape does forward() produce?
-  // Default: same shape (correct for ReLU, and any elementwise op).
-  virtual Shape output_shape(const Shape &in) const { return in; }
-
   // Given an output-gradient shape, what shape does backward() produce?
   // Default: same shape
   virtual Shape input_shape(const Shape &out) const { return out; }
 
-  [[nodiscard]] std::vector<Parameter *> parameters();
+  // Given an input shape, what shape does forward() produce?
+  // Default: same shape (correct for ReLU, and any elementwise op).
+  virtual Shape output_shape(const Shape &in) const { return in; }
 
-  void zero_grad() noexcept;
+  std::vector<Parameter *> parameters() {
+    std::vector<Parameter *> params;
 
-  // Train / eval mode
-  // Propagates recursively to all children
-  bool training = true;
+    for (auto *p : own_parameters())
+      params.push_back(p);
 
-  void train(bool mode = true);
+    for (auto *child : m_Children)
+      for (auto *p : child->parameters())
+        params.push_back(p);
+
+    return params;
+  }
+
+  void zero_grad() noexcept {
+    for (auto *p : own_parameters())
+      p->zero_grad();
+
+    for (auto *child : m_Children)
+      child->zero_grad();
+  }
+
+  void train(bool mode = true) {
+    m_Training = mode;
+    for (auto *child : m_Children)
+      child->train(mode);
+  }
+
   void eval() { train(false); }
 
 protected:
@@ -43,5 +61,6 @@ protected:
 
 private:
   std::vector<Module *> m_Children;
+  bool m_Training{true};
 };
 } // namespace ml::core

@@ -107,4 +107,20 @@ inline void dot_precise(const core::Tensor &x, const core::Tensor &y, core::Tens
       UNREACHABLE();
   });
 }
+
+inline void add_inplace(const core::Tensor &in, core::Tensor &out) {
+  if (in.shape() != out.shape())
+    throw ShapeError("add_inplace: Shape mismatch");
+
+  require_same_device(in, out);
+  require_same_dtype(in, out);
+
+  dispatch(in.device(), out.dtype(), [&]<memory::DeviceType type, class T>() {
+    if constexpr (type == memory::DeviceType::CPU)
+      backend::cpu::add_inplace<T>(in, out);
+    else
+      UNREACHABLE();
+  });
+}
+
 } // namespace ml::ops

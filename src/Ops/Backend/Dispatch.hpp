@@ -36,7 +36,7 @@ template <class F> void dispatch_dtype(core::DType dtype, F &&f) {
     std::forward<F>(f).template operator()<double>();
     return;
   default:
-    throw std::logic_error("Dispatching on non-floating point numbers is unsupported");
+    throw std::logic_error("Operations on non-floating point numbers is unsupported");
   }
 }
 } // namespace detail

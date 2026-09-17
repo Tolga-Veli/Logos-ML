@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Core/DType.hpp"
-#include "Module.hpp"
-#include "Parameter.hpp"
+#include "Modules/Module.hpp"
+#include "Modules/Parameter.hpp"
 
 #include <array>
 
@@ -46,10 +46,10 @@ public:
 
   [[nodiscard]] std::span<Parameter *const> own_parameters() override { return m_Params; }
 
-  // [batch, out_sz]
-  [[nodiscard]] Shape output_shape(const Shape &in) const override { return Shape{in[0], m_Weight.data.shape()[1]}; }
-  // [batch, in_sz]
-  [[nodiscard]] Shape input_shape(const Shape &out) const override { return Shape{out[0], m_Weight.data.shape()[0]}; }
+  [[nodiscard]] Shape input_shape(const Shape &out) const override {
+    return Shape{out[0], m_Weight.value().shape()[0]};
+  }
+  [[nodiscard]] Shape output_shape(const Shape &in) const override { return Shape{in[0], m_Weight.value().shape()[1]}; }
 
 private:
   Parameter m_Weight, m_Bias;

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Core/DType.hpp"
+#include "Core/Error.hpp"
 #include "Core/Shape.hpp"
 #include "Core/Strides.hpp"
+
 #include "Memory/Device.hpp"
 #include "Memory/IntrusiveRef.hpp"
 #include "Memory/Storage.hpp"
@@ -24,7 +26,7 @@ concept Index = std::integral<std::remove_cvref_t<T>> && (!std::same_as<std::rem
 */
 class TensorImpl final : public memory::detail::IntrusiveRefCounted {
 public:
-  explicit TensorImpl(const Shape &shape, DType dtype);
+  explicit TensorImpl(const Shape &shape, DType dtype, memory::Device device);
 
   TensorImpl(memory::IntrusiveRef<memory::Storage> storage, const Shape &shape, const Strides &strides,
              std::size_t offset, DType dtype) noexcept;
@@ -46,6 +48,14 @@ public:
     return m_Storage->raw_data() + m_Offset * dtype_size(m_Dtype);
   }
   [[nodiscard]] bool is_contiguous() const noexcept;
+
+  template <class Self = TensorImpl> [[nodiscard]] memory::IntrusiveRef<Self>
+  as_strided(const Shape &shape, const Strides &strides, std::size_t offset) const {
+    if (shape.rank() != strides.size())
+      throw ShapeError("as_strided: shape rank {} does not match stride count {}", shape.rank(), strides.size());
+
+    return memory::CreateIntrusiveRef<TensorImpl>(m_Storage, shape, strides, m_Offset + offset, m_Dtype);
+  }
 
   template <class T> [[nodiscard]] T *data() noexcept { return m_Storage->data<T>() + m_Offset; }
   template <class T> [[nodiscard]] const T *data() const noexcept { return m_Storage->data<const T>() + m_Offset; }

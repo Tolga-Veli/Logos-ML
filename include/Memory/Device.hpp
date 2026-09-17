@@ -19,7 +19,7 @@ public:
   bool operator<=>(const Device &) const noexcept = default;
 
 private:
-  DeviceType m_Type;
+  DeviceType m_Type{DeviceType::CPU};
 };
 
 [[nodiscard]] constexpr std::string_view to_string(Device device) {

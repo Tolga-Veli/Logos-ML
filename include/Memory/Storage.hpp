@@ -12,7 +12,7 @@ public:
   Storage() noexcept = default;
   ~Storage() noexcept = default;
 
-  explicit Storage(std::size_t bytes, Device device = Device{DeviceType::CPU});
+  explicit Storage(std::size_t bytes, Device device);
 
   Storage(const Storage &) = delete;
   Storage &operator=(const Storage &) = delete;

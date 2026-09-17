@@ -26,6 +26,12 @@ void gemv(Transpose transA, T alpha, MatrixView<const T> A, VectorView<const T> 
                                 x.stride(), beta, y.data(), y.stride());
 }
 
+template <class T> void add_inplace(ContiguousView<const T> in, ContiguousView<T> out) {
+  CORE_ASSERT(in.size() == out.size(), "Shape mismatch");
+  for (std::size_t i = 0; i < in.size(); i++)
+    out[i] += in[i];
+}
+
 // adds vec to every row of mat in-place
 template <class T> void add_rowwise_vector(MatrixView<T> mat, VectorView<const T> vec) {
   CORE_ASSERT(mat.cols() == vec.size(), "Shape mismatch");
@@ -72,7 +78,9 @@ template <class T> void asum(VectorView<const T> x, ScalarView<T> out) {
 // Only valid for T=float -- there's no extra precision tier above double
 // to accumulate into, so this is a compile error for T=double rather
 // than silently degrading to plain dot().
-template <class T> void dot_precise(VectorView<const T>, VectorView<const T>, ScalarView<double>) { UNREACHABLE(); }
+template <class T> void dot_precise(VectorView<const T>, VectorView<const T>, ScalarView<double>) {
+  static_assert("T must be float");
+}
 
 template <>
 inline void dot_precise<float>(VectorView<const float> x, VectorView<const float> y, ScalarView<double> out) {

@@ -11,6 +11,7 @@ public:
   Shape() = default;
   ~Shape() noexcept = default;
 
+  Shape(std::size_t size) : m_Dims(size) {}
   Shape(std::initializer_list<std::size_t> dims) : m_Dims(dims) {}
   explicit Shape(std::vector<std::size_t> dims) : m_Dims(std::move(dims)) {}
 
@@ -22,7 +23,9 @@ public:
     return std::accumulate(m_Dims.begin(), m_Dims.end(), 1uz, std::multiplies<>{});
   }
 
+  [[nodiscard]] std::size_t &operator[](int idx) noexcept { return m_Dims[idx]; }
   [[nodiscard]] std::size_t operator[](int idx) const noexcept { return m_Dims[idx]; }
+
   [[nodiscard]] bool operator==(const Shape &other) const noexcept { return m_Dims == other.m_Dims; }
   [[nodiscard]] bool operator!=(const Shape &other) const noexcept { return !(*this == other); }
 

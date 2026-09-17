@@ -19,7 +19,7 @@ template <class T> SGD<T>::SGD(std::vector<core::Parameter *> params, T learning
     if (!p)
       throw std::invalid_argument("SGD: optimizer parameters cannot be null");
 
-    if (p->data.dtype() != core::dtype_of_v<T>)
+    if (p->value().dtype() != core::dtype_of_v<T>)
       throw DTypeError("SGD: optimizer type must match parameter dtype");
   }
 
@@ -27,7 +27,7 @@ template <class T> SGD<T>::SGD(std::vector<core::Parameter *> params, T learning
     m_Velocity.reserve(m_Params.size());
 
     for (auto *p : m_Params) {
-      m_Velocity.emplace_back(p->data.shape(), p->data.dtype());
+      m_Velocity.emplace_back(p->value().shape(), p->value().dtype());
       ops::fill_zeroes(m_Velocity.back());
     }
   }
@@ -39,14 +39,14 @@ template <class T> void SGD<T>::step() {
     if (!p->has_grad())
       continue;
 
-    if (p->grad->shape() != p->data.shape())
+    if (p->grad().shape() != p->value().shape())
       throw ShapeError("SGD: gradient shape must match parameter shape");
-    if (p->grad->dtype() != p->data.dtype())
+    if (p->grad().dtype() != p->value().dtype())
       throw DTypeError("SGD: gradient dtype must match parameter dtype");
 
-    T *w = p->data.data<T>();
-    const T *grad = p->grad->data<T>();
-    const auto n = p->data.num_elements();
+    T *w = p->value().data<T>();
+    const T *grad = p->grad().data<T>();
+    const auto n = p->value().num_elements();
 
     for (std::size_t j = 0; j < n; j++) {
       const T g = grad[j] + m_WeightDecay * w[j];
