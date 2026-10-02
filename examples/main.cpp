@@ -5,6 +5,7 @@
 #include "Modules/ReLU.hpp"
 #include "Modules/Sequential.hpp"
 #include "Ops/Loss.hpp"
+#include "Ops/Softmax.hpp"
 #include "Optimizers/SGD.hpp"
 
 #include <algorithm>
@@ -50,6 +51,7 @@ std::pair<float, float> eval(ml::core::Sequential &model, ml::optim::SGD<float> 
     }
 
     logits = model.forward(batch.images);
+    ml::ops::softmax(logits, probs);
     ml::ops::cross_entropy(logits, batch.labels, probs, loss);
 
     const float loss_value = loss.at<float>();

@@ -13,8 +13,6 @@ template <class T> inline void cross_entropy(MatrixView<const T> logits, VectorV
                                              MatrixView<T> probs, ScalarView<T> loss) {
   CORE_ASSERT(logits.rows() == probs.rows(), "Shape mismatch");
 
-  softmax(logits, probs);
-
   const auto batch = logits.rows(), classes = logits.cols();
   T sum{0};
   for (std::size_t i = 0; i < batch; i++) {

@@ -5,7 +5,6 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace ml::core {
 class Sequential final : public Module {
@@ -25,8 +24,5 @@ public:
 
   [[nodiscard]] Shape output_shape(const Shape &in) const override;
   [[nodiscard]] Shape input_shape(const Shape &out) const override;
-
-private:
-  std::vector<std::unique_ptr<Module>> m_Modules;
 };
 } // namespace ml::core

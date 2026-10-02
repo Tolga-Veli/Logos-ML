@@ -8,7 +8,7 @@
 
 namespace ml::core {
 
-class Parameter final {
+class Parameter {
 public:
   explicit Parameter(Tensor _data, bool requires_grad = true)
       : m_Data(std::move(_data)), m_RequiresGrad(requires_grad) {}
