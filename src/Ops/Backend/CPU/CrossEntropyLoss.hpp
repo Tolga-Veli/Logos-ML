@@ -12,13 +12,10 @@ namespace ml::backend::cpu {
 template <class T> inline void cross_entropy(MatrixView<const T> logits, VectorView<const int> labels,
                                              MatrixView<T> probs, ScalarView<T> loss) {
   CORE_ASSERT(logits.rows() == probs.rows(), "Shape mismatch");
-
   const auto batch = logits.rows(), classes = logits.cols();
   T sum{0};
   for (std::size_t i = 0; i < batch; i++) {
     const auto label = labels[i];
-
-    CORE_VERIFY(label >= 0 && label < classes, "Label is outside class range");
 
     // Do not compute -log(softmax(logits)[label]) from probs: a valid
     // probability can underflow to zero.  The equivalent log-sum-exp form

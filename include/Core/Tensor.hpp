@@ -53,6 +53,10 @@ public:
     return m_Impl->at<T>(indices...);
   }
 
+  Tensor operator+(const Tensor &other);
+  Tensor operator*(const Tensor &other);
+  Tensor operator-(const Tensor &other);
+
 private:
   memory::IntrusiveRef<TensorImpl> m_Impl;
 

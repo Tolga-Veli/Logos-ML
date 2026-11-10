@@ -10,6 +10,7 @@ Linear::Linear(std::size_t in_sz, std::size_t out_sz, DType type)
     : m_Weight(Tensor(Shape{in_sz, out_sz}, type)), m_Bias(Tensor(Shape{out_sz}, type)) {
   register_parameter("weight", m_Weight);
   register_parameter("bias", m_Bias);
+
   ops::init::xavier_uniform(m_Weight.value());
   ops::fill_zeroes(m_Bias.value());
 }

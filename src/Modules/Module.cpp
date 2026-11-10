@@ -35,37 +35,37 @@ Module &Module::register_module(std::string name, std::unique_ptr<Module> child)
 }
 
 std::vector<Parameter *> Module::parameters() {
-  std::vector<Parameter *> res;
+  std::vector<Parameter *> result;
   std::unordered_set<const Parameter *> seen;
 
-  const auto get = [&](auto &&self, Module &module) -> void {
+  const auto rec = [&](auto &&self, Module &module) -> void {
     for (const auto &entry : module.m_Parameters)
       if (seen.insert(entry.parameter).second)
-        res.push_back(entry.parameter);
+        result.push_back(entry.parameter);
 
     for (const auto &entry : module.m_Children)
       self(self, *entry.module);
   };
 
-  get(get, *this);
-  return res;
+  rec(rec, *this);
+  return result;
 }
 
 std::vector<const Parameter *> Module::parameters() const {
-  std::vector<const Parameter *> res;
+  std::vector<const Parameter *> result;
   std::unordered_set<const Parameter *> seen;
 
-  const auto get = [&](auto &&self, const Module &module) -> void {
+  const auto rec = [&](auto &&self, const Module &module) -> void {
     for (const auto &entry : module.m_Parameters)
       if (seen.insert(entry.parameter).second)
-        res.push_back(entry.parameter);
+        result.push_back(entry.parameter);
 
     for (const auto &entry : module.m_Children)
       self(self, *entry.module);
   };
 
-  get(get, *this);
-  return res;
+  rec(rec, *this);
+  return result;
 }
 
 void Module::zero_grad() {

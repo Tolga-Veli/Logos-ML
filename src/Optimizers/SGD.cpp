@@ -68,3 +68,4 @@ template <class T> void SGD<T>::zero_grad() {
 } // namespace ml::optim
 
 template class ml::optim::SGD<float>;
+template class ml::optim::SGD<double>;
